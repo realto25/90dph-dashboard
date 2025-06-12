@@ -1,227 +1,86 @@
-// app/api/webhooks/clerk/route.ts
-import { prisma } from "@/lib/prisma";
-import { WebhookEvent } from "@clerk/nextjs/server";
-import { headers } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
-import { Webhook } from "svix";
+import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server';
+import { Webhook } from 'svix';
 
-// Assert webhookSecret as string since we check for its existence
-const webhookSecret = process.env.CLERK_WEBHOOK_SECRET as string;
+export async function POST(request: NextRequest) {
+  const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+  if (!WEBHOOK_SECRET) {
+    return NextResponse.json(
+      { error: 'Webhook secret not configured' },
+      { status: 500 }
+    );
+  }
 
-if (!webhookSecret) {
-  throw new Error(
-    "Please add CLERK_WEBHOOK_SECRET to your environment variables"
-  );
-}
+  const svix_id = request.headers.get('svix-id');
+  const svix_timestamp = request.headers.get('svix-timestamp');
+  const svix_signature = request.headers.get('svix-signature');
 
-interface ClerkUserData {
-  id: string;
-  email_addresses: {
-    id: string;
-    email_address: string;
-  }[];
-  first_name: string | null;
-  last_name: string | null;
-  phone_numbers: {
-    phone_number: string;
-  }[];
-  primary_email_address_id: string | null;
-  image_url: string | null;
-  public_metadata: {
-    role?: "guest" | "client" | "manager";
-  };
-}
+  if (!svix_id || !svix_timestamp || !svix_signature) {
+    return NextResponse.json(
+      { error: 'Missing svix headers' },
+      { status: 400 }
+    );
+  }
 
-export async function POST(req: NextRequest) {
+  const payload = await request.json();
+  const body = JSON.stringify(payload);
+
+  const wh = new Webhook(WEBHOOK_SECRET);
+  let evt: any;
+
   try {
-    const body = await req.text();
-    const headerPayload = await headers();
-    const svixId = headerPayload.get("svix-id");
-    const svixTimestamp = headerPayload.get("svix-timestamp");
-    const svixSignature = headerPayload.get("svix-signature");
+    evt = wh.verify(body, {
+      'svix-id': svix_id,
+      'svix-timestamp': svix_timestamp,
+      'svix-signature': svix_signature
+    });
+  } catch (err) {
+    console.error('Webhook verification failed:', err);
+    return NextResponse.json(
+      { error: 'Webhook verification failed' },
+      { status: 400 }
+    );
+  }
 
-    if (!svixId || !svixTimestamp || !svixSignature) {
-      return new Response("Error occurred -- no svix headers", { status: 400 });
-    }
+  const { type, data } = evt;
 
-    const wh = new Webhook(webhookSecret);
-    let evt: WebhookEvent;
-
+  if (type === 'user.created' || type === 'user.updated') {
     try {
-      evt = wh.verify(body, {
-        "svix-id": svixId,
-        "svix-timestamp": svixTimestamp,
-        "svix-signature": svixSignature,
-      }) as WebhookEvent;
-    } catch (err) {
-      console.error("Error verifying webhook:", err);
-      return new Response("Invalid signature", { status: 400 });
-    }
-
-    // Only process user events
-    if (!evt.type.startsWith("user.")) {
-      return NextResponse.json({ message: "Ignoring non-user event" });
-    }
-
-    const userData = evt.data as ClerkUserData;
-    const eventType = evt.type;
-
-    console.log(`Webhook received: ${eventType}`, userData.id);
-
-    // Safely get primary email
-    let primaryEmail = "";
-    if (userData.primary_email_address_id) {
-      const emailObj = userData.email_addresses.find(
-        (email) => email.id === userData.primary_email_address_id
-      );
-      primaryEmail = emailObj?.email_address || "";
-    } else if (userData.email_addresses.length > 0) {
-      primaryEmail = userData.email_addresses[0]?.email_address || "";
-    }
-
-    // Construct name safely
-    const firstName = userData.first_name || "";
-    const lastName = userData.last_name || "";
-    const fullName = `${firstName} ${lastName}`.trim() || "User";
-
-    // Get phone number safely
-    const phone = userData.phone_numbers[0]?.phone_number || "";
-
-    // Get role with default
-    const role = userData.public_metadata.role || "guest";
-
-    switch (eventType) {
-      case "user.created":
-        await handleUserCreated({
-          clerkId: userData.id,
-          email: primaryEmail,
-          name: fullName,
-          phone,
-          role,
-          imageUrl: userData.image_url || "",
-        });
-        break;
-
-      case "user.updated":
-        await handleUserUpdated({
-          clerkId: userData.id,
-          email: primaryEmail,
-          name: fullName,
-          phone,
-          role,
-          imageUrl: userData.image_url || "",
-        });
-        break;
-
-      case "user.deleted":
-        await handleUserDeleted(userData.id);
-        break;
-
-      default:
-        console.log(`Unhandled webhook event: ${eventType}`);
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Webhook error:", error);
-    return NextResponse.json(
-      { error: "Webhook processing failed" },
-      { status: 500 }
-    );
-  }
-}
-
-async function handleUserCreated(userData: {
-  clerkId: string;
-  email: string;
-  name: string;
-  phone: string;
-  role: string;
-  imageUrl: string;
-}) {
-  try {
-    await prisma.user.create({
-      data: {
-        clerkId: userData.clerkId,
-        name: userData.name,
-        email: userData.email,
-        phone: userData.phone || null,
-        role: userData.role.toUpperCase() as "GUEST" | "CLIENT" | "MANAGER",
-      },
-    });
-
-    console.log(`User created in database: ${userData.clerkId}`);
-  } catch (error) {
-    // Type guard to check if error is a Prisma error
-    if (error && typeof error === "object" && "code" in error) {
-      // Now TypeScript knows error has a code property
-      if (error.code === "P2002") {
-        console.log(
-          `User ${userData.clerkId} already exists, skipping creation`
+      const { id, email_addresses, first_name, last_name, public_metadata } =
+        data;
+      const email = email_addresses[0]?.email_address;
+      if (!email || !id) {
+        return NextResponse.json(
+          { error: 'Invalid user data' },
+          { status: 400 }
         );
-        return;
       }
+
+      const userData = {
+        clerkId: id,
+        email,
+        name: `${first_name || ''} ${last_name || ''}`.trim() || 'Unknown',
+        role: public_metadata?.role || 'GUEST'
+      };
+
+      await prisma.user.upsert({
+        where: { clerkId: id },
+        update: userData,
+        create: userData
+      });
+
+      return NextResponse.json(
+        { message: 'User synced successfully' },
+        { status: 200 }
+      );
+    } catch (error) {
+      console.error('Error syncing user:', error);
+      return NextResponse.json(
+        { error: 'Failed to sync user' },
+        { status: 500 }
+      );
     }
-
-    console.error("Error creating user:", error);
-    return NextResponse.json(
-      { error: "Failed to create user" },
-      { status: 500 }
-    );
   }
-}
 
-async function handleUserUpdated(userData: {
-  clerkId: string;
-  email: string;
-  name: string;
-  phone: string;
-  role: string;
-  imageUrl: string;
-}) {
-  try {
-    await prisma.user.upsert({
-      where: { clerkId: userData.clerkId },
-      update: {
-        name: userData.name,
-        email: userData.email,
-        phone: userData.phone || null,
-        role: userData.role.toUpperCase() as "GUEST" | "CLIENT" | "MANAGER",
-      },
-      create: {
-        clerkId: userData.clerkId,
-        name: userData.name,
-        email: userData.email,
-        phone: userData.phone || null,
-        role: userData.role.toUpperCase() as "GUEST" | "CLIENT" | "MANAGER",
-      },
-    });
-
-    console.log(`User updated in database: ${userData.clerkId}`);
-  } catch (error) {
-    console.error("Error updating user:", error);
-    throw error;
-  }
-}
-
-async function handleUserDeleted(clerkId: string) {
-  try {
-    await prisma.user.delete({
-      where: { clerkId },
-    });
-
-    console.log(`User deleted from database: ${clerkId}`);
-  } catch (error) {
-    console.error("Error deleting user:", error);
-
-    if (error && typeof error === "object" && "code" in error) {
-      const prismaError = error as { code: string };
-      if (prismaError.code === "P2025") {
-        console.log(`User ${clerkId} not found in database, skipping deletion`);
-        return;
-      }
-    }
-
-    throw error;
-  }
+  return NextResponse.json({ message: 'Webhook received' });
 }

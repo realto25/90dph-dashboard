@@ -46,7 +46,7 @@ model Plot {
 
 model User {
   id               String         @id @default(cuid())
-  clerkId          String         @unique // ✅ Clerk integration ID
+  clerkId          String         @unique
   name             String
   email            String         @unique
   phone            String?
@@ -64,16 +64,16 @@ model User {
 
 model ClientPlot {
   id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
-  plot      Plot     @relation(fields: [plotId], references: [id])
+  plot      Plot     @relation(fields: [plotId], references: [id], onDelete: Cascade)
   plotId    String   @unique
   createdAt DateTime @default(now())
 }
 
 model Camera {
   id        String   @id @default(cuid())
-  plot      Plot     @relation(fields: [plotId], references: [id])
+  plot      Plot     @relation(fields: [plotId], references: [id], onDelete: Cascade)
   plotId    String   @unique
   ipAddress String
   label     String?
@@ -81,57 +81,71 @@ model Camera {
 }
 
 model VisitRequest {
-  id        String      @id @default(cuid())
-  name      String
-  email     String
-  phone     String
-  date      DateTime
-  time      String
-  status    VisitStatus @default(PENDING)
-  qrCode    String?
-  expiresAt DateTime?
-  plot      Plot        @relation(fields: [plotId], references: [id])
-  plotId    String
-  user      User?       @relation(fields: [userId], references: [id])
-  userId    String?
-  feedback  Feedback?
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id         String      @id @default(cuid())
+  name       String
+  email      String
+  phone      String
+  date       DateTime
+  time       String
+  status     VisitStatus @default(PENDING)
+  qrCode     String?
+  expiresAt  DateTime?
+  plot       Plot        @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  plotId     String
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId     String?
+  feedback   Feedback?   // One-to-one relation
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([status])
+  @@index([email])
 }
 
 model Feedback {
   id               String       @id @default(cuid())
-  bookingId        String       @unique
   rating           Int
   experience       String
   suggestions      String
   purchaseInterest Boolean?
-  booking          VisitRequest @relation(fields: [bookingId], references: [id])
-  user             User         @relation(fields: [userId], references: [id])
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId           String
+  visitRequest     VisitRequest @relation(fields: [visitRequestId], references: [id], onDelete: Cascade)
+  visitRequestId   String       @unique
   createdAt        DateTime     @default(now())
+
+  @@unique([visitRequestId, userId]) // Ensure one feedback per visit request and user
+  @@index([rating])
+  @@index([userId])
 }
 
 model Message {
   id         String   @id @default(cuid())
-  content    String
-  sender     User     @relation("SentMessages", fields: [senderId], references: [id])
+  content    String   @db.Text
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   senderId   String
-  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
   receiverId String
   isRead     Boolean  @default(false)
   createdAt  DateTime @default(now())
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([isRead])
 }
 
 model SellRequest {
   id        String   @id @default(cuid())
-  plot      Plot     @relation(fields: [plotId], references: [id])
+  plot      Plot     @relation(fields: [plotId], references: [id], onDelete: Cascade)
   plotId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
-  reason    String
+  reason    String   @db.Text
   status    String   @default("pending")
   createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([userId])
 }
 
 enum UserRole {
