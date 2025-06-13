@@ -39,6 +39,13 @@ interface User {
 
 type RoleFilter = UserRole | 'ALL';
 
+interface FormData {
+  name: string;
+  email: string;
+  role: UserRole;
+  phone: string;
+}
+
 export default function AllUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
@@ -46,7 +53,7 @@ export default function AllUsersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState<RoleFilter>('ALL');
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
     role: UserRole.GUEST,
@@ -143,7 +150,7 @@ export default function AllUsersPage() {
     setFormData({
       name: user.name,
       email: user.email,
-      role: user.role,
+      role: user.role as UserRole,
       phone: user.phone || ''
     });
     setIsDialogOpen(true);

@@ -1,20 +1,14 @@
 import { prisma } from '@/lib/prisma';
-import { UserRole } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET - Fetch all users or filter by role
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const roleParam = searchParams.get('role');
+    const role = searchParams.get('role');
 
-    // Validate role parameter against UserRole enum
-    const validRoles = Object.values(UserRole);
-    const role = validRoles.includes(roleParam as UserRole)
-      ? (roleParam as UserRole)
-      : null;
-
-    const whereClause = role ? { role } : {};
+    const whereClause = role ? { role: role as UserRole } : {};
 
     const users = await prisma.user.findMany({
       where: whereClause,
@@ -24,7 +18,6 @@ export async function GET(request: NextRequest) {
         name: true,
         email: true,
         role: true,
-        clerkId: true,
         createdAt: true,
         updatedAt: true
       }
@@ -33,6 +26,18 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);
+
+    // Handle specific Prisma errors
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P1001'
+    ) {
+      return NextResponse.json(
+        { error: 'Database connection error. Please try again.' },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
       { error: 'Failed to fetch users' },
       { status: 500 }

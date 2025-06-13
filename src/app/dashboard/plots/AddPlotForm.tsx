@@ -1,10 +1,26 @@
 // app/plots/AddPlotForm.tsx
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Building2, Plus, RefreshCw, X } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -12,11 +28,27 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { Plus, X } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
+import { UploadDropzone } from '@/lib/uploadthing';
+import { cn } from '@/lib/utils';
+
+const formSchema = z.object({
+  title: z.string().min(2, { message: 'Title must be at least 2 characters.' }),
+  dimension: z.string().min(2, { message: 'Dimension is required.' }),
+  totalArea: z.string().min(1, { message: 'Total area is required.' }),
+  price: z.string().min(1, { message: 'Price is required.' }),
+  priceLabel: z.string().min(2, { message: 'Price label is required.' }),
+  status: z.enum(['AVAILABLE', 'ADVANCE', 'SOLD']),
+  location: z.string().min(2, { message: 'Location is required.' }),
+  latitude: z.string().min(1, { message: 'Latitude is required.' }),
+  longitude: z.string().min(1, { message: 'Longitude is required.' }),
+  facing: z.string().min(1, { message: 'Facing is required.' }),
+  mapEmbedUrl: z.string().min(1, { message: 'Map embed URL is required.' }),
+  qrUrl: z.string().optional(),
+  description: z.string().min(5, { message: 'Description is required.' })
+});
+
+type PlotFormValues = z.infer<typeof formSchema>;
 
 interface AddPlotFormProps {
   projectId: string;
@@ -26,88 +58,54 @@ interface AddPlotFormProps {
 const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const { theme } = useTheme();
-  const [formData, setFormData] = useState({
-    title: '',
-    dimension: '',
-    price: '',
-    priceLabel: '',
-    status: 'AVAILABLE' as const,
-    imageUrls: [''],
-    location: '',
-    latitude: '',
-    longitude: '',
-    facing: '',
-    amenities: [''],
-    mapEmbedUrl: '',
-    description: ''
-  });
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
+  const [amenities, setAmenities] = useState(['']);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    // Special handling for latitude and longitude
-    if (name === 'latitude' || name === 'longitude') {
-      // Only allow numbers and decimal points
-      const numericValue = value.replace(/[^0-9.-]/g, '');
-      setFormData((prev) => ({ ...prev, [name]: numericValue }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
+  const form = useForm<PlotFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: '',
+      dimension: '',
+      totalArea: '',
+      price: '',
+      priceLabel: '',
+      status: 'AVAILABLE',
+      location: '',
+      latitude: '',
+      longitude: '',
+      facing: '',
+      mapEmbedUrl: '',
+      qrUrl: '',
+      description: ''
     }
-  };
+  });
 
-  const handleStatusChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, status: value as typeof prev.status }));
-  };
-
-  const handleImageChange = (index: number, value: string) => {
-    setFormData((prev) => {
-      const newImageUrls = [...prev.imageUrls];
-      newImageUrls[index] = value;
-      return { ...prev, imageUrls: newImageUrls };
-    });
-  };
-
-  const addImageField = () => {
-    setFormData((prev) => ({
-      ...prev,
-      imageUrls: [...prev.imageUrls, '']
-    }));
-  };
-
-  const removeImageField = (index: number) => {
-    if (formData.imageUrls.length > 1) {
-      setFormData((prev) => ({
-        ...prev,
-        imageUrls: prev.imageUrls.filter((_, i) => i !== index)
-      }));
+  const handleImageUpload = async (files: { url: string }[]) => {
+    if (files && files.length > 0) {
+      const newUrls = files.map((file) => file.url);
+      setUploadedImageUrls((prev) => [...prev, ...newUrls]);
+      toast.success(
+        `Successfully uploaded ${files.length} image${files.length > 1 ? 's' : ''}`
+      );
     }
   };
 
   const handleAmenityChange = (index: number, value: string) => {
-    setFormData((prev) => {
-      const newAmenities = [...prev.amenities];
+    setAmenities((prev) => {
+      const newAmenities = [...prev];
       newAmenities[index] = value;
-      return { ...prev, amenities: newAmenities };
+      return newAmenities;
     });
   };
 
   const addAmenityField = () => {
-    setFormData((prev) => ({
-      ...prev,
-      amenities: [...prev.amenities, '']
-    }));
+    setAmenities((prev) => [...prev, '']);
   };
 
   const removeAmenityField = (index: number) => {
-    if (formData.amenities.length > 1) {
-      setFormData((prev) => ({
-        ...prev,
-        amenities: prev.amenities.filter((_, i) => i !== index)
-      }));
+    if (amenities.length > 1) {
+      setAmenities((prev) => prev.filter((_, i) => i !== index));
     }
   };
 
@@ -116,28 +114,33 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
     // Extract the src URL if a full iframe code is pasted
     const srcMatch = value.match(/src="([^"]+)"/);
     const mapUrl = srcMatch ? srcMatch[1] : value;
-    setFormData((prev) => ({ ...prev, mapEmbedUrl: mapUrl }));
+    form.setValue('mapEmbedUrl', mapUrl);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (values: PlotFormValues) => {
+    if (uploadedImageUrls.length === 0) {
+      toast.error('Please upload at least one image');
+      return;
+    }
 
     try {
       setLoading(true);
 
-      // Validate latitude and longitude
-      const latitude = parseFloat(formData.latitude);
-      const longitude = parseFloat(formData.longitude);
+      // Validate latitude, longitude, and total area
+      const latitude = parseFloat(values.latitude);
+      const longitude = parseFloat(values.longitude);
+      const totalArea = parseFloat(values.totalArea);
 
       if (isNaN(latitude) || isNaN(longitude)) {
         throw new Error('Please enter valid latitude and longitude values');
       }
 
-      // Filter out empty image URLs and amenities
-      const filteredImageUrls = formData.imageUrls.filter(
-        (url) => url.trim() !== ''
-      );
-      const filteredAmenities = formData.amenities.filter(
+      if (isNaN(totalArea) || totalArea <= 0) {
+        throw new Error('Please enter a valid total area');
+      }
+
+      // Filter out empty amenities
+      const filteredAmenities = amenities.filter(
         (amenity) => amenity.trim() !== ''
       );
 
@@ -147,12 +150,13 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          ...formData,
-          imageUrls: filteredImageUrls,
+          ...values,
+          imageUrls: uploadedImageUrls,
           amenities: filteredAmenities,
-          price: parseInt(formData.price),
-          latitude: latitude,
-          longitude: longitude,
+          price: parseInt(values.price),
+          latitude,
+          longitude,
+          totalArea,
           projectId
         })
       });
@@ -168,24 +172,10 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
         throw new Error(data.error || 'Failed to create plot');
       }
 
-      // Reset form
-      setFormData({
-        title: '',
-        dimension: '',
-        price: '',
-        priceLabel: '',
-        status: 'AVAILABLE',
-        imageUrls: [''],
-        location: '',
-        latitude: '',
-        longitude: '',
-        facing: '',
-        amenities: [''],
-        mapEmbedUrl: '',
-        description: ''
-      });
-
       toast.success('Plot created successfully!');
+      form.reset();
+      setUploadedImageUrls([]);
+      setAmenities(['']);
       if (onSuccess) {
         onSuccess();
       }
@@ -232,261 +222,364 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
     return themeStyles[theme as keyof typeof themeStyles] || themeStyles.light;
   };
 
+  const styles = getThemeStyles();
+
   return (
-    <Card className='mb-8'>
+    <Card className={cn(styles.card, 'mb-8')}>
       <CardHeader>
-        <CardTitle>Add New Plot</CardTitle>
+        <CardTitle className='flex items-center gap-2'>
+          <Building2 className='h-5 w-5 text-blue-600 dark:text-blue-400' />
+          Add New Plot
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className='space-y-6'>
-          <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-            <div className='space-y-2'>
-              <Label htmlFor='title'>Title</Label>
-              <Input
-                id='title'
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+            <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+              <FormField
+                control={form.control}
                 name='title'
-                value={formData.title}
-                onChange={handleChange}
-                required
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor='location'>Location</Label>
-              <Input
-                id='location'
+              <FormField
+                control={form.control}
                 name='location'
-                value={formData.location}
-                onChange={handleChange}
-                required
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor='dimension'>Dimension</Label>
-              <Input
-                id='dimension'
+              <FormField
+                control={form.control}
                 name='dimension'
-                value={formData.dimension}
-                onChange={handleChange}
-                placeholder='e.g., 30x40'
-                required
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Dimension</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder='e.g., 30x40' />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor='price'>Price (₹)</Label>
-              <Input
-                id='price'
+              <FormField
+                control={form.control}
+                name='totalArea'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total Area (sq ft)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type='number'
+                        min='0'
+                        step='0.01'
+                        {...field}
+                        placeholder='e.g., 1200'
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name='price'
-                type='number'
-                value={formData.price}
-                onChange={handleChange}
-                required
-                min='0'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price (₹)</FormLabel>
+                    <FormControl>
+                      <Input type='number' min='0' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor='priceLabel'>Price Label</Label>
-              <Input
-                id='priceLabel'
+              <FormField
+                control={form.control}
                 name='priceLabel'
-                value={formData.priceLabel}
-                onChange={handleChange}
-                placeholder='e.g., Starting from 50L'
-                required
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Price Label</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder='e.g., Starting from 50L' />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor='status'>Status</Label>
-              <Select
-                value={formData.status}
-                onValueChange={handleStatusChange}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value='AVAILABLE'>Available</SelectItem>
-                  <SelectItem value='ADVANCE'>Advance</SelectItem>
-                  <SelectItem value='SOLD'>Sold</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <FormField
+                control={form.control}
+                name='status'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder='Select status' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value='AVAILABLE'>Available</SelectItem>
+                        <SelectItem value='ADVANCE'>Advance</SelectItem>
+                        <SelectItem value='SOLD'>Sold</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className='space-y-2'>
-              <Label htmlFor='facing'>Facing</Label>
-              <Input
-                id='facing'
+              <FormField
+                control={form.control}
                 name='facing'
-                value={formData.facing}
-                onChange={handleChange}
-                placeholder='e.g., North'
-                required
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Facing</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder='e.g., North' />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor='latitude'>Latitude</Label>
-              <Input
-                id='latitude'
+              <FormField
+                control={form.control}
                 name='latitude'
-                value={formData.latitude}
-                onChange={handleChange}
-                placeholder='e.g., 12.9716'
-                required
-                type='text'
-                pattern='-?[0-9]*\.?[0-9]*'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Latitude</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder='e.g., 12.9716' />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className='space-y-2'>
-              <Label htmlFor='longitude'>Longitude</Label>
-              <Input
-                id='longitude'
+              <FormField
+                control={form.control}
                 name='longitude'
-                value={formData.longitude}
-                onChange={handleChange}
-                placeholder='e.g., 77.5946'
-                required
-                type='text'
-                pattern='-?[0-9]*\.?[0-9]*'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Longitude</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder='e.g., 77.5946' />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            <div className='space-y-2 md:col-span-2'>
-              <Label htmlFor='description'>Description</Label>
-              <textarea
-                id='description'
+              <FormField
+                control={form.control}
+                name='mapEmbedUrl'
+                render={({ field }) => (
+                  <FormItem className='md:col-span-2'>
+                    <FormLabel>Google Maps Embed URL</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        onChange={handleMapEmbedUrlChange}
+                        placeholder='Paste Google Maps embed URL or iframe code here'
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    {field.value && (
+                      <div className='mt-2 h-[300px] w-full overflow-hidden rounded-md border'>
+                        <iframe
+                          src={field.value}
+                          width='100%'
+                          height='100%'
+                          style={{ border: 0 }}
+                          allowFullScreen
+                          loading='lazy'
+                          referrerPolicy='no-referrer-when-downgrade'
+                        />
+                      </div>
+                    )}
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='qrUrl'
+                render={({ field }) => (
+                  <FormItem className='md:col-span-2'>
+                    <FormLabel>QR Code URL</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder='Enter QR code URL' />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name='description'
-                value={formData.description}
-                onChange={handleChange}
-                className='min-h-[100px] w-full rounded-md border px-3 py-2'
-                placeholder='Enter plot description...'
-                required
+                render={({ field }) => (
+                  <FormItem className='md:col-span-2'>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        className='min-h-[100px]'
+                        placeholder='Enter plot description...'
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
 
-          {/* Image URLs Section */}
-          <div className='space-y-4'>
-            <Label className='text-base font-medium'>Image URLs</Label>
-            {formData.imageUrls.map((url, index) => (
-              <div key={index} className='flex items-center gap-2'>
-                <div className='flex-1'>
-                  <Input
-                    value={url}
-                    onChange={(e) => handleImageChange(index, e.target.value)}
-                    placeholder='https://example.com/image.jpg'
-                    required={index === 0}
-                  />
+            {/* Image Upload Section */}
+            <div className='space-y-4'>
+              <FormLabel>Plot Images</FormLabel>
+              <UploadDropzone
+                endpoint='imageUploader'
+                onClientUploadComplete={(res) => {
+                  if (res) {
+                    handleImageUpload(res);
+                  }
+                }}
+                onUploadError={(error: Error) => {
+                  toast.error(`ERROR! ${error.message}`);
+                }}
+                className='ut-label:text-lg ut-allowed-content:ut-uploading:text-red-300'
+                config={{
+                  mode: 'auto',
+                  appendOnPaste: true
+                }}
+                onUploadBegin={() => {
+                  toast.loading('Uploading images...');
+                }}
+                onUploadProgress={(progress) => {
+                  if (progress === 100) {
+                    toast.dismiss();
+                  }
+                }}
+              />
+              {uploadedImageUrls.length > 0 && (
+                <div className='grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4'>
+                  {uploadedImageUrls.map((url, index) => (
+                    <div
+                      key={index}
+                      className='relative aspect-square overflow-hidden rounded-lg border'
+                    >
+                      <img
+                        src={url}
+                        alt={`Plot image ${index + 1}`}
+                        className='h-full w-full object-cover'
+                      />
+                      <Button
+                        type='button'
+                        variant='destructive'
+                        size='icon'
+                        className='absolute top-2 right-2 h-6 w-6'
+                        onClick={() => {
+                          setUploadedImageUrls((prev) =>
+                            prev.filter((_, i) => i !== index)
+                          );
+                          toast.success('Image removed');
+                        }}
+                      >
+                        <X className='h-4 w-4' />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
-                {formData.imageUrls.length > 1 && (
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='icon'
-                    onClick={() => removeImageField(index)}
-                    className='text-red-600 hover:text-red-700'
-                  >
-                    <X className='h-4 w-4' />
-                  </Button>
-                )}
-              </div>
-            ))}
-            <Button
-              type='button'
-              variant='outline'
-              onClick={addImageField}
-              className='w-full'
-            >
-              <Plus className='mr-2 h-4 w-4' />
-              Add Another Image
-            </Button>
-          </div>
-
-          {/* Amenities Section */}
-          <div className='space-y-4'>
-            <Label className='text-base font-medium'>Amenities</Label>
-            {formData.amenities.map((amenity, index) => (
-              <div key={index} className='flex items-center gap-2'>
-                <div className='flex-1'>
-                  <Input
-                    value={amenity}
-                    onChange={(e) => handleAmenityChange(index, e.target.value)}
-                    placeholder='e.g., Park, Gym, Pool'
-                  />
+              )}
+              {uploadedImageUrls.length > 0 && (
+                <div className='text-muted-foreground text-sm'>
+                  {uploadedImageUrls.length} image
+                  {uploadedImageUrls.length > 1 ? 's' : ''} uploaded
                 </div>
-                {formData.amenities.length > 1 && (
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='icon'
-                    onClick={() => removeAmenityField(index)}
-                    className='text-red-600 hover:text-red-700'
-                  >
-                    <X className='h-4 w-4' />
-                  </Button>
-                )}
-              </div>
-            ))}
-            <Button
-              type='button'
-              variant='outline'
-              onClick={addAmenityField}
-              className='w-full'
-            >
-              <Plus className='mr-2 h-4 w-4' />
-              Add Another Amenity
-            </Button>
-          </div>
-
-          {/* Google Maps Embed Section */}
-          <div className='space-y-4 md:col-span-2'>
-            <Label htmlFor='mapEmbedUrl' className='text-base font-medium'>
-              Google Maps Embed URL
-            </Label>
-            <Input
-              id='mapEmbedUrl'
-              name='mapEmbedUrl'
-              value={formData.mapEmbedUrl}
-              onChange={handleMapEmbedUrlChange}
-              placeholder='Paste Google Maps embed URL or iframe code here'
-              required
-            />
-            <div className='text-muted-foreground text-sm'>
-              <p className='mb-2'>To get the embed URL:</p>
-              <ol className='ml-2 list-inside list-decimal space-y-1'>
-                <li>Go to Google Maps and find your location</li>
-                <li>Click "Share" and select "Embed a map"</li>
-                <li>
-                  Copy the src URL from the iframe code or the entire iframe
-                  code
-                </li>
-                <li>Paste it here</li>
-              </ol>
+              )}
             </div>
-            {formData.mapEmbedUrl && (
-              <div className='h-[300px] w-full overflow-hidden rounded-md border'>
-                <iframe
-                  src={formData.mapEmbedUrl}
-                  width='100%'
-                  height='100%'
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading='lazy'
-                  referrerPolicy='no-referrer-when-downgrade'
-                />
-              </div>
-            )}
-          </div>
 
-          <Button type='submit' disabled={loading} className='w-full'>
-            {loading ? 'Adding...' : 'Add Plot'}
-          </Button>
-        </form>
+            {/* Amenities Section */}
+            <div className='space-y-4'>
+              <FormLabel>Amenities</FormLabel>
+              {amenities.map((amenity, index) => (
+                <div key={index} className='flex items-center gap-2'>
+                  <div className='flex-1'>
+                    <Input
+                      value={amenity}
+                      onChange={(e) =>
+                        handleAmenityChange(index, e.target.value)
+                      }
+                      placeholder='e.g., Park, Gym, Pool'
+                    />
+                  </div>
+                  {amenities.length > 1 && (
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='icon'
+                      onClick={() => removeAmenityField(index)}
+                      className='text-red-600 hover:text-red-700'
+                    >
+                      <X className='h-4 w-4' />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                type='button'
+                variant='outline'
+                onClick={addAmenityField}
+                className='w-full'
+              >
+                <Plus className='mr-2 h-4 w-4' />
+                Add Another Amenity
+              </Button>
+            </div>
+
+            <Button
+              type='submit'
+              disabled={loading}
+              className={cn(styles.button.primary, 'w-full gap-2')}
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className='h-4 w-4 animate-spin' />
+                  Creating Plot...
+                </>
+              ) : (
+                <>
+                  <Building2 className='h-4 w-4' />
+                  Create Plot
+                </>
+              )}
+            </Button>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );

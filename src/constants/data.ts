@@ -65,6 +65,27 @@ export const navItems: NavItem[] = [
     ]
   },
   {
+    title: 'Client Management',
+    url: '#', // Placeholder as there is no direct link for the parent
+    icon: 'billing',
+    isActive: true,
+
+    items: [
+      {
+        title: 'Assign Camera',
+        url: '/dashboard/assign-camera',
+        icon: 'userPen',
+        shortcut: ['C', 'c']
+      },
+      {
+        title: 'Login',
+        shortcut: ['l', 'l'],
+        url: '/',
+        icon: 'login'
+      }
+    ]
+  },
+  {
     title: 'Account',
     url: '#', // Placeholder as there is no direct link for the parent
     icon: 'billing',
@@ -98,6 +119,15 @@ export const navItems: NavItem[] = [
     url: '/dashboard/kanban',
     icon: 'kanban',
     shortcut: ['k', 'k'],
+    isActive: false,
+    items: [] // No child items
+  },
+
+  {
+    title: 'All Users',
+    url: '/dashboard/all-users',
+    icon: 'kanban',
+    shortcut: ['U', 'u'],
     isActive: false,
     items: [] // No child items
   }

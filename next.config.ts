@@ -9,6 +9,16 @@ const baseConfig: NextConfig = {
         protocol: 'https',
         hostname: 'api.slingacademy.com',
         port: ''
+      },
+      {
+        protocol: 'https',
+        hostname: 'utfs.io',
+        port: ''
+      },
+      {
+        protocol: 'https',
+        hostname: 'uploadthing.com',
+        port: ''
       }
     ]
   },

@@ -22,6 +22,7 @@ model Plot {
   id            String         @id @default(cuid())
   title         String
   dimension     String
+  totalArea     Float          @default(0)
   price         Int
   priceLabel    String
   status        PlotStatus     @default(AVAILABLE)
@@ -32,6 +33,7 @@ model Plot {
   facing        String
   amenities     String[]
   mapEmbedUrl   String?        @db.Text
+  qrUrl         String?        @db.Text
   description   String         @db.Text
   project       Project        @relation(fields: [projectId], references: [id])
   projectId     String
@@ -41,6 +43,7 @@ model Plot {
   camera        Camera?
   clientPlot    ClientPlot?
   SellRequest   SellRequest[]
+  lands         Land[]
   createdAt     DateTime       @default(now())
 }
 
@@ -54,10 +57,12 @@ model User {
   visitRequests    VisitRequest[]
   feedback         Feedback[]
   ownedPlots       Plot[]         @relation("PlotOwner")
+  ownedLands       Land[]         @relation("LandOwner")
   clientPlots      ClientPlot[]
   sentMessages     Message[]      @relation("SentMessages")
   receivedMessages Message[]      @relation("ReceivedMessages")
   SellRequest      SellRequest[]
+  buyRequests      BuyRequest[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 }
@@ -81,22 +86,22 @@ model Camera {
 }
 
 model VisitRequest {
-  id         String      @id @default(cuid())
-  name       String
-  email      String
-  phone      String
-  date       DateTime
-  time       String
-  status     VisitStatus @default(PENDING)
-  qrCode     String?
-  expiresAt  DateTime?
-  plot       Plot        @relation(fields: [plotId], references: [id], onDelete: Cascade)
-  plotId     String
-  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  userId     String?
-  feedback   Feedback?   // One-to-one relation
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id        String      @id @default(cuid())
+  name      String
+  email     String
+  phone     String
+  date      DateTime
+  time      String
+  status    VisitStatus @default(PENDING)
+  qrCode    String?
+  expiresAt DateTime?
+  plot      Plot        @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  plotId    String
+  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId    String?
+  feedback  Feedback? // One-to-one relation
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 
   @@index([status])
   @@index([email])
@@ -148,6 +153,52 @@ model SellRequest {
   @@index([userId])
 }
 
+model BuyRequest {
+  id        String        @id @default(cuid())
+  land      Land          @relation(fields: [landId], references: [id], onDelete: Cascade)
+  landId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  message   String        @db.Text
+  status    RequestStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([status])
+  @@index([userId])
+  @@index([landId])
+}
+
+model Land {
+  id          String       @id @default(cuid())
+  number      String
+  size        String
+  price       Int
+  status      PlotStatus   @default(AVAILABLE)
+  imageUrl    String?
+  plot        Plot         @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  plotId      String
+  owner       User?        @relation("LandOwner", fields: [ownerId], references: [id])
+  ownerId     String?
+  camera      LandCamera?
+  buyRequests BuyRequest[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([plotId])
+  @@index([status])
+  @@index([ownerId])
+}
+
+model LandCamera {
+  id        String   @id @default(cuid())
+  land      Land     @relation(fields: [landId], references: [id], onDelete: Cascade)
+  landId    String   @unique
+  ipAddress String
+  label     String?
+  createdAt DateTime @default(now())
+}
+
 enum UserRole {
   GUEST
   CLIENT
@@ -161,6 +212,13 @@ enum PlotStatus {
 }
 
 enum VisitStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum RequestStatus {
   PENDING
   APPROVED
   REJECTED
