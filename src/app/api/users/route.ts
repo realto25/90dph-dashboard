@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, name, email, role } = body;
+    const { id, name, email, role, phone } = body;
 
     if (!id) {
       return NextResponse.json(
@@ -174,13 +174,15 @@ export async function PUT(request: NextRequest) {
       data: {
         name: name || undefined,
         email: email || undefined,
-        role: role || undefined
+        role: role || undefined,
+        phone: phone || undefined
       },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        phone: true,
         clerkId: true,
         createdAt: true,
         updatedAt: true
