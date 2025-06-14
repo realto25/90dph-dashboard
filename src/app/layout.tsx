@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { fontVariables } from '@/lib/font';
 import { cn } from '@/lib/utils';
 import { NextSSRPlugin } from '@uploadthing/react/next-ssr-plugin';
+import 'leaflet/dist/leaflet.css';
 import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
 import NextTopLoader from 'nextjs-toploader';

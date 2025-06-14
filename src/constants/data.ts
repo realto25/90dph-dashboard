@@ -107,6 +107,27 @@ export const navItems: NavItem[] = [
     ]
   },
   {
+    title: 'Manager',
+    url: '#', // Placeholder as there is no direct link for the parent
+    icon: 'billing',
+    isActive: true,
+
+    items: [
+      {
+        title: 'Assign Office ',
+        url: '/dashboard/managers',
+        icon: 'userPen',
+        shortcut: ['m', 'm']
+      },
+      {
+        title: 'Login',
+        shortcut: ['l', 'l'],
+        url: '/',
+        icon: 'login'
+      }
+    ]
+  },
+  {
     title: 'Feedback',
     url: '/dashboard/feedback',
     icon: 'kanban',

@@ -65,6 +65,9 @@ model User {
   buyRequests      BuyRequest[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
+  attendances      Attendance[]
+  managerOffices   Office[]       @relation("ManagerOffices")
+  LeaveRequest     LeaveRequest[]
 }
 
 model ClientPlot {
@@ -223,4 +226,53 @@ enum RequestStatus {
   APPROVED
   REJECTED
   COMPLETED
+}
+
+model Office {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  latitude    Float
+  longitude   Float
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  managers    User[]       @relation("ManagerOffices")
+  attendances Attendance[]
+
+  @@index([name])
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  manager   User     @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  managerId String
+  office    Office   @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  officeId  String
+  status    String   @default("PRESENT")
+  createdAt DateTime @default(now())
+
+  @@unique([managerId, officeId, createdAt])
+  @@index([managerId, createdAt])
+  @@index([officeId, createdAt])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  ON_DUTY
+}
+
+model LeaveRequest {
+  id        String        @id @default(cuid())
+  manager   User          @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  managerId String
+  startDate DateTime
+  endDate   DateTime
+  reason    String        @db.Text
+  status    RequestStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([managerId])
+  @@index([status])
 }
