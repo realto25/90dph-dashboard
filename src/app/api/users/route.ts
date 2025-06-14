@@ -6,20 +6,74 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const clerkId = searchParams.get('clerkId');
     const role = searchParams.get('role');
 
-    const whereClause = role ? { role: role as UserRole } : {};
+    // If clerkId is provided, return single user
+    if (clerkId) {
+      const user = await prisma.user.findUnique({
+        where: { clerkId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          role: true,
+          ownedPlots: {
+            select: {
+              id: true,
+              title: true,
+              location: true,
+              status: true,
+              camera: true,
+              project: {
+                select: {
+                  name: true,
+                  location: true
+                }
+              }
+            }
+          },
+          ownedLands: {
+            select: {
+              id: true,
+              number: true,
+              size: true,
+              status: true,
+              camera: true,
+              plot: {
+                select: {
+                  title: true,
+                  location: true,
+                  project: {
+                    select: {
+                      name: true,
+                      location: true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
 
+      if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
+
+      return NextResponse.json(user);
+    }
+
+    // If no clerkId, return filtered list of users
+    const whereClause = role ? { role: role as UserRole } : {};
     const users = await prisma.user.findMany({
       where: whereClause,
-      orderBy: { createdAt: 'desc' },
       select: {
         id: true,
         name: true,
         email: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true
+        role: true
       }
     });
 
@@ -39,7 +93,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Failed to fetch users' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

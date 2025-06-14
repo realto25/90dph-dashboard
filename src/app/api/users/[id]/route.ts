@@ -1,11 +1,11 @@
 import { prisma } from '@/lib/prisma';
-import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 // Define the route handler
 export async function GET(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> } // Explicitly type params as a Promise
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     // Await the params since they are wrapped in a Promise in Next.js App Router
@@ -13,7 +13,49 @@ export async function GET(
 
     const user = await prisma.user.findUnique({
       where: { clerkId: id },
-      select: { role: true }
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        ownedPlots: {
+          select: {
+            id: true,
+            title: true,
+            location: true,
+            status: true,
+            camera: true,
+            project: {
+              select: {
+                name: true,
+                location: true
+              }
+            }
+          }
+        },
+        ownedLands: {
+          select: {
+            id: true,
+            number: true,
+            size: true,
+            status: true,
+            camera: true,
+            plot: {
+              select: {
+                title: true,
+                location: true,
+                project: {
+                  select: {
+                    name: true,
+                    location: true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     });
 
     if (!user) {
