@@ -33,14 +33,12 @@ export default function LeaveRequestsPage() {
   const loadLeaveRequests = async () => {
     try {
       const res = await fetch('/api/leave-requests');
-      if (!res.ok) {
-        throw new Error('Failed to fetch leave requests');
-      }
+      if (!res.ok) throw new Error('Failed to fetch leave requests');
       const data = await res.json();
       setLeaveRequests(data);
     } catch (error) {
-      toast.error('Failed to load leave requests');
       console.error('Error loading leave requests:', error);
+      toast.error('Failed to load leave requests');
     } finally {
       setIsLoading(false);
     }
@@ -57,30 +55,24 @@ export default function LeaveRequestsPage() {
         body: JSON.stringify({ id, status })
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to update leave request');
-      }
+      if (!res.ok) throw new Error('Failed to update leave request');
 
-      toast.success(`Leave request ${status.toLowerCase()}`);
-      loadLeaveRequests(); // Reload the list
+      toast.success('Leave request updated successfully');
+      loadLeaveRequests();
     } catch (error) {
-      toast.error('Failed to update leave request');
       console.error('Error updating leave request:', error);
+      toast.error('Failed to update leave request');
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: LeaveRequest['status']) => {
     const variants = {
       PENDING: 'secondary',
-      APPROVED: 'success',
+      APPROVED: 'default',
       REJECTED: 'destructive'
     } as const;
 
-    return (
-      <Badge variant={variants[status as keyof typeof variants]}>
-        {status}
-      </Badge>
-    );
+    return <Badge variant={variants[status]}>{status}</Badge>;
   };
 
   return (
@@ -88,7 +80,6 @@ export default function LeaveRequestsPage() {
       <div className='flex items-center justify-between'>
         <h1 className='text-3xl font-bold tracking-tight'>Leave Requests</h1>
       </div>
-      <Separator />
 
       <Card>
         <CardHeader>
@@ -96,45 +87,54 @@ export default function LeaveRequestsPage() {
         </CardHeader>
         <CardContent>
           <ScrollArea className='h-[600px]'>
-            <div className='grid gap-4'>
-              {leaveRequests.map((request) => (
-                <Card key={request.id}>
-                  <CardContent className='p-4'>
-                    <div className='flex items-center justify-between'>
-                      <div>
-                        <h4 className='font-semibold'>
-                          {request.manager.name}
-                        </h4>
-                        <p className='text-muted-foreground text-sm'>
-                          {request.manager.email}
-                        </p>
-                      </div>
-                      {getStatusBadge(request.status)}
-                    </div>
-                    <Separator className='my-4' />
-                    <div className='space-y-2'>
-                      <div className='grid grid-cols-2 gap-4'>
+            <div className='space-y-4'>
+              {isLoading ? (
+                <p className='text-muted-foreground py-4 text-center'>
+                  Loading leave requests...
+                </p>
+              ) : (
+                leaveRequests.map((request) => (
+                  <Card key={request.id}>
+                    <CardContent className='p-4'>
+                      <div className='flex items-center justify-between'>
                         <div>
-                          <p className='text-sm font-medium'>Start Date</p>
+                          <h4 className='font-semibold'>
+                            {request.manager.name}
+                          </h4>
                           <p className='text-muted-foreground text-sm'>
+                            {request.manager.email}
+                          </p>
+                        </div>
+                        {getStatusBadge(request.status)}
+                      </div>
+
+                      <Separator className='my-4' />
+
+                      <div className='space-y-2'>
+                        <div className='flex justify-between text-sm'>
+                          <span className='text-muted-foreground'>
+                            Start Date:
+                          </span>
+                          <span>
                             {format(new Date(request.startDate), 'PPP')}
-                          </p>
+                          </span>
                         </div>
-                        <div>
-                          <p className='text-sm font-medium'>End Date</p>
-                          <p className='text-muted-foreground text-sm'>
+                        <div className='flex justify-between text-sm'>
+                          <span className='text-muted-foreground'>
+                            End Date:
+                          </span>
+                          <span>
                             {format(new Date(request.endDate), 'PPP')}
-                          </p>
+                          </span>
+                        </div>
+                        <div className='flex justify-between text-sm'>
+                          <span className='text-muted-foreground'>Reason:</span>
+                          <span className='text-right'>{request.reason}</span>
                         </div>
                       </div>
-                      <div>
-                        <p className='text-sm font-medium'>Reason</p>
-                        <p className='text-muted-foreground text-sm'>
-                          {request.reason}
-                        </p>
-                      </div>
+
                       {request.status === 'PENDING' && (
-                        <div className='flex gap-2 pt-2'>
+                        <div className='mt-4 flex justify-end gap-2'>
                           <Button
                             variant='outline'
                             onClick={() =>
@@ -153,10 +153,10 @@ export default function LeaveRequestsPage() {
                           </Button>
                         </div>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                ))
+              )}
               {leaveRequests.length === 0 && !isLoading && (
                 <p className='text-muted-foreground py-4 text-center'>
                   No leave requests found
