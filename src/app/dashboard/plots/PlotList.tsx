@@ -47,7 +47,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useThemeConfig } from '@/components/active-theme';
-import AssignCameraDialog from '@/components/AssignCameraDialog';
+// import AssignCameraDialog from '@/components/AssignCameraDialog';
 import AssignLandDialog from '@/components/AssignLandDialog';
 import LandLayoutEditor from '@/components/LandLayoutEditor';
 import { Label } from '@/components/ui/label';
@@ -566,7 +566,7 @@ const PlotList = ({ projectId }: PlotListProps) => {
 
                   <div className='mt-4'>
                     <AssignLandDialog plotId={plot.id} />
-                    <AssignCameraDialog plotId={plot.id} />
+                    {/* <AssignCameraDialog plotId={plot.id} /> */}
                   </div>
                 </CardContent>
               </Card>
