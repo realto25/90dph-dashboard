@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
             createdAt: true
           }
         },
-        SellRequest: {
+        sellRequests: {
           select: {
             id: true,
             status: true,
@@ -100,4 +100,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

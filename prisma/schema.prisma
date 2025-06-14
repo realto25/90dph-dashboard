@@ -42,7 +42,7 @@ model Plot {
   visitRequests VisitRequest[]
   camera        Camera?
   clientPlot    ClientPlot?
-  SellRequest   SellRequest[]
+  sellRequests  SellRequest[]
   lands         Land[]
   createdAt     DateTime       @default(now())
 }
@@ -61,7 +61,7 @@ model User {
   clientPlots           ClientPlot[]
   sentMessages          Message[]      @relation("SentMessages")
   receivedMessages      Message[]      @relation("ReceivedMessages")
-  SellRequest           SellRequest[]
+  sellRequests          SellRequest[]
   buyRequests           BuyRequest[]
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
@@ -149,17 +149,31 @@ model Message {
 }
 
 model SellRequest {
-  id        String   @id @default(cuid())
-  plot      Plot     @relation(fields: [plotId], references: [id], onDelete: Cascade)
-  plotId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  reason    String   @db.Text
-  status    String   @default("pending")
-  createdAt DateTime @default(now())
+  id               String            @id @default(cuid())
+  plotId           String
+  plot             Plot              @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  askingPrice      Float?
+  potentialProfit  Float?
+  profitPercentage Float?
+  reason           String?           @db.Text
+  urgency          UrgencyLevel      @default(NORMAL)
+  agentAssistance  Boolean           @default(false)
+  documents        String[]
+  termsAccepted    Boolean           @default(false)
+  status           SellRequestStatus @default(PENDING)
+  adminNotes       String?           @db.Text
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  approvedAt       DateTime?
+  rejectedAt       DateTime?
+  completedAt      DateTime?
 
-  @@index([status])
+  @@index([plotId])
   @@index([userId])
+  @@index([status])
+  @@map("sell_requests")
 }
 
 model BuyRequest {
@@ -232,6 +246,20 @@ enum RequestStatus {
   APPROVED
   REJECTED
   COMPLETED
+}
+
+enum UrgencyLevel {
+  LOW
+  NORMAL
+  HIGH
+}
+
+enum SellRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
 }
 
 model Office {
