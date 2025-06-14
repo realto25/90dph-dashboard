@@ -7,9 +7,16 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
+    const managerId = searchParams.get('managerId');
 
     // Build the where clause
-    const whereClause = userId ? { userId } : {};
+    const whereClause: any = {};
+    if (userId) whereClause.userId = userId;
+    if (managerId) {
+      whereClause.assignedManager = {
+        clerkId: managerId
+      };
+    }
 
     const visitRequests = await prisma.visitRequest.findMany({
       where: whereClause,
@@ -35,6 +42,14 @@ export async function GET(request: NextRequest) {
                 name: true
               }
             }
+          }
+        },
+        assignedManager: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            clerkId: true
           }
         }
       }
@@ -73,6 +88,7 @@ export async function GET(request: NextRequest) {
           expiresAt: request.expiresAt?.toISOString() || null,
           plot: request.plot,
           user: request.user,
+          assignedManager: request.assignedManager,
           createdAt: request.createdAt.toISOString(),
           updatedAt: request.updatedAt.toISOString()
         };
@@ -183,6 +199,14 @@ export async function POST(request: NextRequest) {
               }
             }
           }
+        },
+        assignedManager: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            clerkId: true
+          }
         }
       }
     });
@@ -197,29 +221,34 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PATCH - Update visit request status (approve/reject)
+// PATCH - Update visit request status (approve/reject) and assign manager
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, status } = body;
+    const { id, status, managerId } = body;
 
-    if (!id || !status) {
+    if (!id) {
       return NextResponse.json(
-        { error: 'Visit request ID and status are required' },
+        { error: 'Visit request ID is required' },
         { status: 400 }
       );
     }
 
-    if (!['APPROVED', 'REJECTED'].includes(status)) {
+    if (status && !['APPROVED', 'REJECTED'].includes(status)) {
       return NextResponse.json(
         { error: 'Invalid status. Must be APPROVED or REJECTED' },
         { status: 400 }
       );
     }
 
+    // Prepare update data
+    const updateData: any = {};
+    if (status) updateData.status = status;
+    if (managerId) updateData.assignedManagerId = managerId;
+
     const visitRequest = await prisma.visitRequest.update({
       where: { id },
-      data: { status },
+      data: updateData,
       include: {
         user: {
           select: {
@@ -241,6 +270,14 @@ export async function PATCH(request: NextRequest) {
                 name: true
               }
             }
+          }
+        },
+        assignedManager: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            clerkId: true
           }
         }
       }

@@ -13,6 +13,13 @@ import {
   DialogTrigger
 } from '@/components/ui/dialog';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -24,6 +31,13 @@ import axios from 'axios';
 import { CheckCircle2, Clock, QrCode, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+
+interface Manager {
+  id: string;
+  name: string;
+  email: string;
+  clerkId: string;
+}
 
 interface VisitRequest {
   id: string;
@@ -44,6 +58,7 @@ interface VisitRequest {
       name: string;
     };
   };
+  assignedManager?: Manager;
   createdAt: string;
   rejectionReason?: string | null;
 }
@@ -56,15 +71,27 @@ const statusConfig = {
 
 export default function VisitRequestsPage() {
   const [requests, setRequests] = useState<VisitRequest[]>([]);
+  const [managers, setManagers] = useState<Manager[]>([]);
   const [selectedQR, setSelectedQR] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
+    fetchManagers();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const fetchManagers = async () => {
+    try {
+      const response = await axios.get('/api/users?role=MANAGER');
+      setManagers(response.data);
+    } catch (error) {
+      console.error('Error fetching managers:', error);
+      toast.error('Failed to fetch managers');
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -88,9 +115,10 @@ export default function VisitRequestsPage() {
 
   const handleApprove = async (requestId: string) => {
     try {
-      const response = await axios.post(
-        `/api/visit-requests/${requestId}/accept`
-      );
+      const response = await axios.patch(`/api/visit-requests`, {
+        id: requestId,
+        status: 'APPROVED'
+      });
       setRequests((prev) =>
         prev.map((req) => (req.id === requestId ? response.data : req))
       );
@@ -101,14 +129,12 @@ export default function VisitRequestsPage() {
     }
   };
 
-  const handleReject = async (requestId: string, reason: string) => {
+  const handleReject = async (requestId: string) => {
     try {
-      const response = await axios.post(
-        `/api/visit-requests/${requestId}/reject`,
-        {
-          reason
-        }
-      );
+      const response = await axios.patch(`/api/visit-requests`, {
+        id: requestId,
+        status: 'REJECTED'
+      });
       setRequests((prev) =>
         prev.map((req) => (req.id === requestId ? response.data : req))
       );
@@ -116,6 +142,22 @@ export default function VisitRequestsPage() {
     } catch (error: any) {
       console.error('Error rejecting request:', error.message || error);
       toast.error('Failed to reject request');
+    }
+  };
+
+  const handleAssignManager = async (requestId: string, managerId: string) => {
+    try {
+      const response = await axios.patch(`/api/visit-requests`, {
+        id: requestId,
+        managerId
+      });
+      setRequests((prev) =>
+        prev.map((req) => (req.id === requestId ? response.data : req))
+      );
+      toast.success('Manager assigned successfully');
+    } catch (error: any) {
+      console.error('Error assigning manager:', error.message || error);
+      toast.error('Failed to assign manager');
     }
   };
 
@@ -143,6 +185,7 @@ export default function VisitRequestsPage() {
                   <TableHead>Plot</TableHead>
                   <TableHead>Date & Time</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Manager</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -177,6 +220,25 @@ export default function VisitRequestsPage() {
                           {statusConfig[statusKey].label}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        <Select
+                          value={req.assignedManager?.id}
+                          onValueChange={(value) =>
+                            handleAssignManager(req.id, value)
+                          }
+                        >
+                          <SelectTrigger className='w-[200px]'>
+                            <SelectValue placeholder='Select manager' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {managers.map((manager) => (
+                              <SelectItem key={manager.id} value={manager.id}>
+                                {manager.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
                       <TableCell className='space-x-2'>
                         {req.status === 'PENDING' && (
                           <>
@@ -190,9 +252,7 @@ export default function VisitRequestsPage() {
                             <Button
                               size='sm'
                               variant='outline'
-                              onClick={() =>
-                                handleReject(req.id, 'Request rejected')
-                              }
+                              onClick={() => handleReject(req.id)}
                             >
                               Reject
                             </Button>

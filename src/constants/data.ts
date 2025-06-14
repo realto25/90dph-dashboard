@@ -120,9 +120,9 @@ export const navItems: NavItem[] = [
         shortcut: ['m', 'm']
       },
       {
-        title: 'Login',
+        title: 'Leave Requests',
         shortcut: ['l', 'l'],
-        url: '/',
+        url: '/dashboard/leave-requests',
         icon: 'login'
       }
     ]
@@ -143,6 +143,7 @@ export const navItems: NavItem[] = [
     isActive: false,
     items: [] // No child items
   },
+  
 
   {
     title: 'All Users',
