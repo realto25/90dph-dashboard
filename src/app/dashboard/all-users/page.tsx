@@ -44,6 +44,7 @@ interface FormData {
   email: string;
   role: UserRole;
   phone: string;
+  clerkId: string;
 }
 
 export default function AllUsersPage() {
@@ -57,7 +58,8 @@ export default function AllUsersPage() {
     name: '',
     email: '',
     role: UserRole.GUEST,
-    phone: ''
+    phone: '',
+    clerkId: ''
   });
 
   // Fetch users
@@ -93,30 +95,43 @@ export default function AllUsersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const url = editingUser ? '/api/users' : '/api/users';
-      const method = editingUser ? 'PUT' : 'POST';
+      if (editingUser) {
+        const response = await fetch('/api/users', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...formData, id: editingUser.id })
+        });
 
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(
-          editingUser ? { ...formData, id: editingUser.id } : formData
-        )
-      });
+        const data = await response.json();
 
-      const data = await response.json();
-
-      if (response.ok) {
-        toast.success(
-          editingUser
-            ? 'User updated successfully'
-            : 'User created successfully'
-        );
-        setIsDialogOpen(false);
-        fetchUsers();
-        resetForm();
+        if (response.ok) {
+          toast.success('User updated successfully');
+          setIsDialogOpen(false);
+          fetchUsers();
+          resetForm();
+        } else {
+          toast.error(data.error || 'Something went wrong');
+        }
       } else {
-        toast.error(data.error || 'Something went wrong');
+        const response = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            clerkId: `temp_${Date.now()}`
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          toast.success('User created successfully');
+          setIsDialogOpen(false);
+          fetchUsers();
+          resetForm();
+        } else {
+          toast.error(data.error || 'Something went wrong');
+        }
       }
     } catch (error) {
       toast.error('An error occurred');
@@ -151,7 +166,8 @@ export default function AllUsersPage() {
       name: user.name,
       email: user.email,
       role: user.role as UserRole,
-      phone: user.phone || ''
+      phone: user.phone || '',
+      clerkId: ''
     });
     setIsDialogOpen(true);
   };
@@ -162,7 +178,8 @@ export default function AllUsersPage() {
       name: '',
       email: '',
       role: UserRole.GUEST,
-      phone: ''
+      phone: '',
+      clerkId: ''
     });
     setEditingUser(null);
   };

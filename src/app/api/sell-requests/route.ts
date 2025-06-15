@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
     // Calculate potential profit/loss based on land price vs asking price
     const landPrice = land.price;
     const potentialProfit = askingPrice - landPrice;
-    const profitPercentage = ((potentialProfit / landPrice) * 100);
+    const profitPercentage = (potentialProfit / landPrice) * 100;
 
     // Create sell request
     const sellRequest = await prisma.sellRequest.create({
@@ -235,7 +235,6 @@ export async function POST(request: NextRequest) {
       success: true,
       data: sellRequest
     });
-
   } catch (error) {
     console.error('Error creating sell request:', error);
 
@@ -277,7 +276,13 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Validate status
-    const validStatuses = ['PENDING', 'APPROVED', 'REJECTED', 'COMPLETED', 'CANCELLED'];
+    const validStatuses = [
+      'PENDING',
+      'APPROVED',
+      'REJECTED',
+      'COMPLETED',
+      'CANCELLED'
+    ];
     if (!validStatuses.includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
@@ -387,9 +392,9 @@ export async function DELETE(request: NextRequest) {
       where: { id }
     });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      message: 'Sell request deleted successfully' 
+      message: 'Sell request deleted successfully'
     });
   } catch (error) {
     console.error('Error deleting sell request:', error);

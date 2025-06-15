@@ -21,18 +21,18 @@ export const navItems: NavItem[] = [
     shortcut: ['d', 'd'],
     items: [] // Empty array as there are no child items for Dashboard
   },
-  {
-    title: 'Product',
-    url: '/dashboard/product',
-    icon: 'product',
-    shortcut: ['p', 'p'],
-    isActive: false,
-    items: [] // No child items
-  },
+  // {
+  //   title: 'Product',
+  //   url: '/dashboard/product',
+  //   icon: 'product',
+  //   shortcut: ['p', 'p'],
+  //   isActive: false,
+  //   items: [] // No child items
+  // },
   {
     title: 'Plots',
     url: '/dashboard/plots',
-    icon: 'product',
+    icon: 'plots',
     shortcut: ['p', 'p'],
     isActive: false,
     items: [] // No child items
@@ -40,7 +40,7 @@ export const navItems: NavItem[] = [
   {
     title: 'Requests',
     url: '#', // Placeholder as there is no direct link for the parent
-    icon: 'billing',
+    icon: 'requests',
     isActive: true,
 
     items: [
@@ -67,7 +67,7 @@ export const navItems: NavItem[] = [
   {
     title: 'Client Management',
     url: '#', // Placeholder as there is no direct link for the parent
-    icon: 'billing',
+    icon: 'clientManagement',
     isActive: true,
 
     items: [
@@ -77,18 +77,18 @@ export const navItems: NavItem[] = [
         icon: 'userPen',
         shortcut: ['C', 'c']
       },
-      {
-        title: 'Login',
-        shortcut: ['l', 'l'],
-        url: '/',
-        icon: 'login'
-      }
+      // {
+      //   title: 'Login',
+      //   shortcut: ['l', 'l'],
+      //   url: '/',
+      //   icon: 'login'
+      // }
     ]
   },
   {
     title: 'Account',
     url: '#', // Placeholder as there is no direct link for the parent
-    icon: 'billing',
+    icon: 'account',
     isActive: true,
 
     items: [
@@ -109,7 +109,7 @@ export const navItems: NavItem[] = [
   {
     title: 'Manager',
     url: '#', // Placeholder as there is no direct link for the parent
-    icon: 'billing',
+    icon: 'manager',
     isActive: true,
 
     items: [
@@ -130,7 +130,7 @@ export const navItems: NavItem[] = [
   {
     title: 'Feedback',
     url: '/dashboard/feedback',
-    icon: 'kanban',
+    icon: 'feedback',
     shortcut: ['F', 'f'],
     isActive: false,
     items: [] // No child items
@@ -143,12 +143,11 @@ export const navItems: NavItem[] = [
     isActive: false,
     items: [] // No child items
   },
-  
 
   {
     title: 'All Users',
     url: '/dashboard/all-users',
-    icon: 'kanban',
+    icon: 'allUsers',
     shortcut: ['U', 'u'],
     isActive: false,
     items: [] // No child items
