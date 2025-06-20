@@ -16,9 +16,22 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
-import { TileLayer, useMapEvents } from 'react-leaflet';
+import React, { useEffect, useState } from 'react';
+import { Marker, Popup, TileLayer, useMapEvents } from 'react-leaflet';
 import { toast } from 'sonner';
+
+import L from 'leaflet';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import 'leaflet/dist/leaflet.css';
+
+// Fix leaflet's default icon path so marker images show up
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow
+});
 
 // Lazy load leaflet map to avoid SSR issues
 const DynamicMap = dynamic(
@@ -42,15 +55,37 @@ type Office = {
   managers: Manager[];
 };
 
+// Custom Lucide MapPin SVG as marker icon
+const mapPinSvg = encodeURIComponent(`
+  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="red" viewBox="0 0 24 24">
+    <path d="M12 21c-.3 0-.5-.1-.7-.3C9.1 18.3 4 12.6 4 9a8 8 0 1 1 16 0c0 3.6-5.1 9.3-7.3 11.7-.2.2-.4.3-.7.3zm0-17a6 6 0 0 0-6 6c0 2.7 4 7.3 6 9.6 2-2.3 6-6.9 6-9.6a6 6 0 0 0-6-6zm0 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/>
+  </svg>
+`);
+const mapPinIconUrl = `data:image/svg+xml,${mapPinSvg}`;
+
+const customMapPinIcon = new L.Icon({
+  iconUrl: mapPinIconUrl,
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+  popupAnchor: [0, -32],
+  shadowUrl: undefined
+});
+
 export default function AssignManagerToOffice() {
+  // Set default to Salem, Tamil Nadu
+  const DEFAULT_LAT = 11.6643;
+  const DEFAULT_LNG = 78.146;
   const [managers, setManagers] = useState<Manager[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [selectedManager, setSelectedManager] = useState('');
   const [selectedOffice, setSelectedOffice] = useState('');
   const [officeName, setOfficeName] = useState('');
-  const [latlng, setLatlng] = useState<[number, number]>([12.9716, 77.5946]);
-  const [manualLat, setManualLat] = useState(latlng[0].toString());
-  const [manualLng, setManualLng] = useState(latlng[1].toString());
+  const [latlng, setLatlng] = useState<[number, number]>([
+    DEFAULT_LAT,
+    DEFAULT_LNG
+  ]);
+  const [manualLat, setManualLat] = useState(DEFAULT_LAT.toString());
+  const [manualLng, setManualLng] = useState(DEFAULT_LNG.toString());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -103,9 +138,9 @@ export default function AssignManagerToOffice() {
 
       toast.success('Office created successfully!');
       setOfficeName('');
-      setLatlng([12.9716, 77.5946]);
-      setManualLat('12.9716');
-      setManualLng('77.5946');
+      setLatlng([DEFAULT_LAT, DEFAULT_LNG]);
+      setManualLat(DEFAULT_LAT.toString());
+      setManualLng(DEFAULT_LNG.toString());
 
       // Reload offices
       await loadData();
@@ -164,6 +199,7 @@ export default function AssignManagerToOffice() {
       lng <= 180
     ) {
       setLatlng([lat, lng]);
+      toast.success('Map location updated!');
     } else {
       toast.error('Please enter valid coordinates');
     }
@@ -410,11 +446,40 @@ function DraggableMarker({
   latlng: [number, number];
   setLatlng: (pos: [number, number]) => void;
 }) {
-  const map = useMapEvents({
+  const [position, setPosition] = useState<[number, number]>(latlng);
+  const markerRef = React.useRef(null);
+
+  useEffect(() => {
+    setPosition(latlng);
+  }, [latlng]);
+
+  useMapEvents({
     click(e) {
       setLatlng([e.latlng.lat, e.latlng.lng]);
     }
   });
 
-  return null;
+  return (
+    <Marker
+      position={position}
+      draggable={true}
+      icon={customMapPinIcon}
+      eventHandlers={{
+        dragend: (e) => {
+          // @ts-ignore
+          const marker = markerRef.current;
+          if (marker) {
+            // @ts-ignore
+            const newPos = marker.getLatLng();
+            setLatlng([newPos.lat, newPos.lng]);
+          }
+        }
+      }}
+      ref={markerRef}
+    >
+      <Popup>
+        Lat: {position[0].toFixed(6)}, Lng: {position[1].toFixed(6)}
+      </Popup>
+    </Marker>
+  );
 }

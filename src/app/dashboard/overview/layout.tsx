@@ -1,3 +1,5 @@
+'use client';
+
 import PageContainer from '@/components/layout/page-container';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -8,8 +10,9 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
+import { useAuth } from '@/lib/auth';
 import { IconTrendingDown, IconTrendingUp } from '@tabler/icons-react';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 export default function OverViewLayout({
   sales,
@@ -22,6 +25,184 @@ export default function OverViewLayout({
   bar_stats: React.ReactNode;
   area_stats: React.ReactNode;
 }) {
+  const { userRole, isLoading: authLoading } = useAuth();
+
+  // Analytics state
+  const [loading, setLoading] = useState(true);
+  const [projectCount, setProjectCount] = useState(0);
+  const [plotCount, setPlotCount] = useState(0);
+  const [plotAvailable, setPlotAvailable] = useState(0);
+  const [plotSold, setPlotSold] = useState(0);
+  const [plotReserved, setPlotReserved] = useState(0);
+  const [clientCount, setClientCount] = useState(0);
+  const [clientNew, setClientNew] = useState(0);
+  const [managerCount, setManagerCount] = useState(0);
+  const [managerOffices, setManagerOffices] = useState(0);
+  const [visitRequestCount, setVisitRequestCount] = useState(0);
+  const [visitPending, setVisitPending] = useState(0);
+  const [visitCompleted, setVisitCompleted] = useState(0);
+  const [visitRejected, setVisitRejected] = useState(0);
+  const [buyRequestCount, setBuyRequestCount] = useState(0);
+  const [buyPending, setBuyPending] = useState(0);
+  const [buyApproved, setBuyApproved] = useState(0);
+  const [buyRejected, setBuyRejected] = useState(0);
+  const [sellRequestCount, setSellRequestCount] = useState(0);
+  const [sellPending, setSellPending] = useState(0);
+  const [sellApproved, setSellApproved] = useState(0);
+  const [sellRejected, setSellRejected] = useState(0);
+  const [leaveRequestCount, setLeaveRequestCount] = useState(0);
+  const [leavePending, setLeavePending] = useState(0);
+  const [leaveApproved, setLeaveApproved] = useState(0);
+  const [leaveRejected, setLeaveRejected] = useState(0);
+
+  useEffect(() => {
+    async function fetchAnalytics() {
+      setLoading(true);
+      // Projects
+      const projectsRes = await fetch('/api/projects');
+      const projectsData = await projectsRes.json();
+      if (Array.isArray(projectsData)) {
+        setProjectCount(projectsData.length);
+      } else {
+        setProjectCount(0);
+      }
+
+      // Plots
+      const plotsRes = await fetch('/api/plots');
+      const plotsData = await plotsRes.json();
+      if (Array.isArray(plotsData)) {
+        setPlotCount(plotsData.length);
+        setPlotAvailable(
+          plotsData.filter((p: any) => p.status === 'AVAILABLE').length
+        );
+        setPlotSold(plotsData.filter((p: any) => p.status === 'SOLD').length);
+        setPlotReserved(
+          plotsData.filter((p: any) => p.status === 'RESERVED').length
+        );
+      } else {
+        setPlotCount(0);
+        setPlotAvailable(0);
+        setPlotSold(0);
+        setPlotReserved(0);
+      }
+
+      // Users
+      const usersRes = await fetch('/api/all-users');
+      const usersData = await usersRes.json();
+      if (Array.isArray(usersData.data)) {
+        setClientCount(
+          usersData.data.filter((u: any) => u.role === 'CLIENT').length
+        );
+        setManagerCount(
+          usersData.data.filter((u: any) => u.role === 'MANAGER').length
+        );
+        const now = new Date();
+        const thisMonth = now.getMonth();
+        setClientNew(
+          usersData.data.filter(
+            (u: any) =>
+              u.role === 'CLIENT' &&
+              new Date(u.createdAt).getMonth() === thisMonth
+          ).length
+        );
+      } else {
+        setClientCount(0);
+        setManagerCount(0);
+        setClientNew(0);
+      }
+
+      setManagerOffices(0); // TODO: Replace with real endpoint if available
+
+      // Visit Requests
+      const visitRes = await fetch('/api/visit-requests');
+      const visitData = await visitRes.json();
+      if (Array.isArray(visitData)) {
+        setVisitRequestCount(visitData.length);
+        setVisitPending(
+          visitData.filter((v: any) => v.status === 'PENDING').length
+        );
+        setVisitCompleted(
+          visitData.filter((v: any) => v.status === 'COMPLETED').length
+        );
+        setVisitRejected(
+          visitData.filter((v: any) => v.status === 'REJECTED').length
+        );
+      } else {
+        setVisitRequestCount(0);
+        setVisitPending(0);
+        setVisitCompleted(0);
+        setVisitRejected(0);
+      }
+
+      // Buy Requests
+      const buyRes = await fetch('/api/buy-requests');
+      const buyData = await buyRes.json();
+      if (Array.isArray(buyData)) {
+        setBuyRequestCount(buyData.length);
+        setBuyPending(
+          buyData.filter((b: any) => b.status === 'PENDING').length
+        );
+        setBuyApproved(
+          buyData.filter((b: any) => b.status === 'APPROVED').length
+        );
+        setBuyRejected(
+          buyData.filter((b: any) => b.status === 'REJECTED').length
+        );
+      } else {
+        setBuyRequestCount(0);
+        setBuyPending(0);
+        setBuyApproved(0);
+        setBuyRejected(0);
+      }
+
+      // Sell Requests
+      const sellRes = await fetch('/api/sell-requests');
+      const sellData = await sellRes.json();
+      if (Array.isArray(sellData)) {
+        setSellRequestCount(sellData.length);
+        setSellPending(
+          sellData.filter((s: any) => s.status === 'PENDING').length
+        );
+        setSellApproved(
+          sellData.filter((s: any) => s.status === 'APPROVED').length
+        );
+        setSellRejected(
+          sellData.filter((s: any) => s.status === 'REJECTED').length
+        );
+      } else {
+        setSellRequestCount(0);
+        setSellPending(0);
+        setSellApproved(0);
+        setSellRejected(0);
+      }
+
+      // Leave Requests
+      setLeaveRequestCount(0); // TODO: Replace with real endpoint if available
+      setLeavePending(0);
+      setLeaveApproved(0);
+      setLeaveRejected(0);
+
+      setLoading(false);
+    }
+    fetchAnalytics();
+  }, []);
+
+  if (authLoading || loading) {
+    return <div className='p-8 text-center'>Loading analytics...</div>;
+  }
+
+  if (userRole !== 'SUPERADMIN') {
+    return (
+      <PageContainer>
+        <div className='flex h-full flex-1 items-center justify-center'>
+          <h2 className='text-xl font-semibold text-red-500'>
+            You do not have access to view analytics.
+          </h2>
+        </div>
+      </PageContainer>
+    );
+  }
+
   return (
     <PageContainer>
       <div className='flex flex-1 flex-col space-y-2'>
@@ -36,7 +217,7 @@ export default function OverViewLayout({
             <CardHeader>
               <CardDescription>Total Projects</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                12
+                {projectCount}
               </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
@@ -58,7 +239,7 @@ export default function OverViewLayout({
             <CardHeader>
               <CardDescription>Total Plots</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                156
+                {plotCount}
               </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
@@ -69,16 +250,18 @@ export default function OverViewLayout({
             </CardHeader>
             <CardFooter className='flex-col items-start gap-1.5 text-sm'>
               <div className='line-clamp-1 flex gap-2 font-medium'>
-                45 Available <IconTrendingUp className='size-4' />
+                {plotAvailable} Available <IconTrendingUp className='size-4' />
               </div>
-              <div className='text-muted-foreground'>89 Sold, 22 Reserved</div>
+              <div className='text-muted-foreground'>
+                {plotSold} Sold, {plotReserved} Reserved
+              </div>
             </CardFooter>
           </Card>
           <Card className='@container/card'>
             <CardHeader>
               <CardDescription>Total Clients</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                234
+                {clientCount}
               </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
@@ -91,14 +274,16 @@ export default function OverViewLayout({
               <div className='line-clamp-1 flex gap-2 font-medium'>
                 Active Clients <IconTrendingUp className='size-4' />
               </div>
-              <div className='text-muted-foreground'>45 New this month</div>
+              <div className='text-muted-foreground'>
+                {clientNew} New this month
+              </div>
             </CardFooter>
           </Card>
           <Card className='@container/card'>
             <CardHeader>
               <CardDescription>Total Managers</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                15
+                {managerCount}
               </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
@@ -111,7 +296,9 @@ export default function OverViewLayout({
               <div className='line-clamp-1 flex gap-2 font-medium'>
                 Active Managers <IconTrendingUp className='size-4' />
               </div>
-              <div className='text-muted-foreground'>Across 8 offices</div>
+              <div className='text-muted-foreground'>
+                Across {managerOffices} offices
+              </div>
             </CardFooter>
           </Card>
         </div>
@@ -121,7 +308,7 @@ export default function OverViewLayout({
             <CardHeader>
               <CardDescription>Visit Requests</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                89
+                {visitRequestCount}
               </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
@@ -132,10 +319,10 @@ export default function OverViewLayout({
             </CardHeader>
             <CardFooter className='flex-col items-start gap-1.5 text-sm'>
               <div className='line-clamp-1 flex gap-2 font-medium'>
-                45 Pending <IconTrendingUp className='size-4' />
+                {visitPending} Pending <IconTrendingUp className='size-4' />
               </div>
               <div className='text-muted-foreground'>
-                34 Completed, 10 Rejected
+                {visitCompleted} Completed, {visitRejected} Rejected
               </div>
             </CardFooter>
           </Card>
@@ -143,7 +330,7 @@ export default function OverViewLayout({
             <CardHeader>
               <CardDescription>Buy Requests</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                45
+                {buyRequestCount}
               </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
@@ -154,10 +341,10 @@ export default function OverViewLayout({
             </CardHeader>
             <CardFooter className='flex-col items-start gap-1.5 text-sm'>
               <div className='line-clamp-1 flex gap-2 font-medium'>
-                20 Pending <IconTrendingUp className='size-4' />
+                {buyPending} Pending <IconTrendingUp className='size-4' />
               </div>
               <div className='text-muted-foreground'>
-                15 Approved, 10 Rejected
+                {buyApproved} Approved, {buyRejected} Rejected
               </div>
             </CardFooter>
           </Card>
@@ -165,7 +352,7 @@ export default function OverViewLayout({
             <CardHeader>
               <CardDescription>Sell Requests</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                34
+                {sellRequestCount}
               </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
@@ -176,10 +363,10 @@ export default function OverViewLayout({
             </CardHeader>
             <CardFooter className='flex-col items-start gap-1.5 text-sm'>
               <div className='line-clamp-1 flex gap-2 font-medium'>
-                15 Pending <IconTrendingUp className='size-4' />
+                {sellPending} Pending <IconTrendingUp className='size-4' />
               </div>
               <div className='text-muted-foreground'>
-                12 Approved, 7 Rejected
+                {sellApproved} Approved, {sellRejected} Rejected
               </div>
             </CardFooter>
           </Card>
@@ -187,7 +374,7 @@ export default function OverViewLayout({
             <CardHeader>
               <CardDescription>Leave Requests</CardDescription>
               <CardTitle className='text-2xl font-semibold tabular-nums @[250px]/card:text-3xl'>
-                23
+                {leaveRequestCount}
               </CardTitle>
               <CardAction>
                 <Badge variant='outline'>
@@ -198,10 +385,10 @@ export default function OverViewLayout({
             </CardHeader>
             <CardFooter className='flex-col items-start gap-1.5 text-sm'>
               <div className='line-clamp-1 flex gap-2 font-medium'>
-                8 Pending <IconTrendingDown className='size-4' />
+                {leavePending} Pending <IconTrendingDown className='size-4' />
               </div>
               <div className='text-muted-foreground'>
-                12 Approved, 3 Rejected
+                {leaveApproved} Approved, {leaveRejected} Rejected
               </div>
             </CardFooter>
           </Card>

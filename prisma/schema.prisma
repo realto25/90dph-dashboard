@@ -226,7 +226,10 @@ enum UserRole {
   GUEST
   CLIENT
   MANAGER
+  ADMIN
+  SUPERADMIN
 }
+
 
 enum PlotStatus {
   AVAILABLE

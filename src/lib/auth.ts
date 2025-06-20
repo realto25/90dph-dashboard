@@ -1,3 +1,4 @@
+'use client';
 import { useAuth as useClerkAuth } from '@clerk/nextjs';
 import { UserRole } from '@prisma/client';
 import { useEffect, useState } from 'react';

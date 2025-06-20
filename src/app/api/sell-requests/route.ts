@@ -20,56 +20,61 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const clerkId = searchParams.get('clerkId');
 
-    if (!clerkId) {
-      return NextResponse.json(
-        { error: 'Clerk ID is required' },
-        { status: 400 }
-      );
-    }
+    if (clerkId) {
+      // Find the user by clerkId
+      const user = await prisma.user.findUnique({
+        where: { clerkId },
+        select: { id: true }
+      });
 
-    // Find the user by clerkId
-    const user = await prisma.user.findUnique({
-      where: { clerkId },
-      select: { id: true }
-    });
+      if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const sellRequests = await prisma.sellRequest.findMany({
-      where: { userId: user.id },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        plot: {
-          select: {
-            id: true,
-            title: true,
-            location: true,
-            dimension: true,
-            price: true,
-            imageUrls: true,
-            totalArea: true,
-            project: {
-              select: {
-                id: true,
-                name: true
+      const sellRequests = await prisma.sellRequest.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          plot: {
+            select: {
+              id: true,
+              title: true,
+              location: true,
+              dimension: true,
+              price: true,
+              imageUrls: true,
+              totalArea: true,
+              project: {
+                select: {
+                  id: true,
+                  name: true
+                }
               }
             }
-          }
-        },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            clerkId: true
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              clerkId: true
+            }
           }
         }
-      }
-    });
+      });
 
-    return NextResponse.json(sellRequests);
+      return NextResponse.json(sellRequests);
+    } else {
+      // Return all sell requests for analytics
+      const sellRequests = await prisma.sellRequest.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+          plot: true,
+          user: true
+        }
+      });
+      return NextResponse.json(sellRequests);
+    }
   } catch (error) {
     console.error('Error fetching sell requests:', error);
     return NextResponse.json(

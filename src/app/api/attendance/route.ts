@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server';
 
 function calculateDistance(
   lat1: number,
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
     if (!clerkId || latitude === undefined || longitude === undefined) {
       return NextResponse.json(
-        { error: "Missing clerkId or location coordinates" },
+        { error: 'Missing clerkId or location coordinates' },
         { status: 400 }
       );
     }
@@ -37,17 +37,17 @@ export async function POST(req: NextRequest) {
     const manager = await prisma.user.findUnique({
       where: { clerkId },
       include: {
-        managerOffices: true,
-      },
+        managerOffices: true
+      }
     });
 
     if (!manager) {
-      return NextResponse.json({ error: "Manager not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Manager not found' }, { status: 404 });
     }
 
     if (manager.managerOffices.length === 0) {
       return NextResponse.json(
-        { error: "No office assigned to this manager" },
+        { error: 'No office assigned to this manager' },
         { status: 404 }
       );
     }
@@ -87,16 +87,16 @@ export async function POST(req: NextRequest) {
             officeId: office.id,
             createdAt: {
               gte: todayStart,
-              lt: todayEnd,
-            },
-          },
+              lt: todayEnd
+            }
+          }
         });
 
         if (existingAttendance) {
           return NextResponse.json({
-            message: "Attendance already marked for today",
+            message: 'Attendance already marked for today',
             office: office.name,
-            date: existingAttendance.createdAt.toDateString(),
+            date: existingAttendance.createdAt.toDateString()
           });
         }
 
@@ -105,26 +105,26 @@ export async function POST(req: NextRequest) {
           data: {
             managerId: manager.id,
             officeId: office.id,
-            status: "PRESENT",
+            status: 'PRESENT'
           },
           include: {
             office: {
               select: {
-                name: true,
-              },
-            },
-          },
+                name: true
+              }
+            }
+          }
         });
 
         return NextResponse.json({
-          message: "Attendance marked successfully",
+          message: 'Attendance marked successfully',
           attendance: {
             id: attendance.id,
             status: attendance.status,
             createdAt: attendance.createdAt,
-            office: attendance.office.name,
+            office: attendance.office.name
           },
-          distance: Math.round(distance),
+          distance: Math.round(distance)
         });
       }
     }
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
     // No office within radius
     return NextResponse.json(
       {
-        error: "You are too far from any assigned office location",
+        error: 'You are too far from any assigned office location',
         nearestOffice: nearestOffice?.name,
         distance: Math.round(minDistance),
         requiredDistance: allowedRadius,
@@ -141,19 +141,19 @@ export async function POST(req: NextRequest) {
           nearestOffice: nearestOffice
             ? {
                 latitude: nearestOffice.latitude,
-                longitude: nearestOffice.longitude,
+                longitude: nearestOffice.longitude
               }
-            : null,
-        },
+            : null
+        }
       },
       { status: 403 }
     );
   } catch (error) {
-    console.error("Error marking attendance:", error);
+    console.error('Error marking attendance:', error);
 
     return NextResponse.json(
       {
-        error: "Server error occurred while marking attendance",
+        error: 'Server error occurred while marking attendance'
       },
       { status: 500 }
     );
@@ -163,23 +163,23 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const clerkId = searchParams.get("clerkId");
-    const date = searchParams.get("date");
+    const clerkId = searchParams.get('clerkId');
+    const date = searchParams.get('date');
 
     if (!clerkId) {
-      return NextResponse.json({ error: "Missing clerkId" }, { status: 400 });
+      return NextResponse.json({ error: 'Missing clerkId' }, { status: 400 });
     }
 
     const manager = await prisma.user.findUnique({
-      where: { clerkId },
+      where: { clerkId }
     });
 
     if (!manager) {
-      return NextResponse.json({ error: "Manager not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Manager not found' }, { status: 404 });
     }
 
     let whereClause: any = {
-      managerId: manager.id,
+      managerId: manager.id
     };
 
     // If date is provided, filter by that date
@@ -197,7 +197,7 @@ export async function GET(req: NextRequest) {
 
       whereClause.createdAt = {
         gte: startOfDay,
-        lt: endOfDay,
+        lt: endOfDay
       };
     }
 
@@ -206,18 +206,18 @@ export async function GET(req: NextRequest) {
       include: {
         office: {
           select: {
-            name: true,
-          },
-        },
+            name: true
+          }
+        }
       },
       orderBy: {
-        createdAt: "desc",
-      },
+        createdAt: 'desc'
+      }
     });
 
     return NextResponse.json(attendances);
   } catch (error) {
-    console.error("Error fetching attendance:", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error('Error fetching attendance:', error);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

@@ -24,22 +24,25 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('projectId');
 
-    if (!projectId) {
-      return NextResponse.json(
-        { error: 'Project ID is required' },
-        { status: 400 }
-      );
+    if (projectId) {
+      const plots = await prisma.plot.findMany({
+        where: {
+          projectId: projectId
+        },
+        include: {
+          project: true
+        }
+      });
+      return NextResponse.json(plots);
+    } else {
+      // Return all plots for analytics
+      const plots = await prisma.plot.findMany({
+        include: {
+          project: true
+        }
+      });
+      return NextResponse.json(plots);
     }
-
-    const plots = await prisma.plot.findMany({
-      where: {
-        projectId: projectId
-      },
-      include: {
-        project: true
-      }
-    });
-    return NextResponse.json(plots);
   } catch (error) {
     console.error('Error fetching plots:', error);
     return NextResponse.json(

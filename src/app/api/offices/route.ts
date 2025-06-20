@@ -1,5 +1,5 @@
-import { prisma } from "@/lib/prisma";
-import { NextRequest, NextResponse } from "next/server";
+import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
@@ -7,21 +7,21 @@ export async function POST(req: NextRequest) {
     const { name, latitude, longitude } = body;
 
     if (!name || latitude == null || longitude == null) {
-      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+      return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
 
     const office = await prisma.office.create({
       data: {
         name,
         latitude,
-        longitude,
-      },
+        longitude
+      }
     });
 
     return NextResponse.json(office);
   } catch (error) {
-    console.error("Error creating office:", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error('Error creating office:', error);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
 
@@ -34,15 +34,15 @@ export async function GET() {
             id: true,
             name: true,
             email: true,
-            clerkId: true,
-          },
-        },
-      },
+            clerkId: true
+          }
+        }
+      }
     });
 
     return NextResponse.json(offices);
   } catch (error) {
-    console.error("Error fetching offices:", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    console.error('Error fetching offices:', error);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

@@ -2,20 +2,26 @@ import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import QRCode from 'qrcode';
 
-// GET - Fetch all visit requests or filter by user
+// GET - Fetch all visit requests or filter by user, manager, or clerkId
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const managerId = searchParams.get('managerId');
+    const clerkId = searchParams.get('clerkId');
 
-    // Build the where clause
-    const whereClause: any = {};
-    if (userId) whereClause.userId = userId;
-    if (managerId) {
-      whereClause.assignedManager = {
-        clerkId: managerId
+    let whereClause: any = {};
+    if (clerkId) {
+      whereClause = {
+        OR: [{ user: { clerkId } }, { assignedManager: { clerkId } }]
       };
+    } else {
+      if (userId) whereClause.userId = userId;
+      if (managerId) {
+        whereClause.assignedManager = {
+          clerkId: managerId
+        };
+      }
     }
 
     const visitRequests = await prisma.visitRequest.findMany({

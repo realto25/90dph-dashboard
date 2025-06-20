@@ -283,14 +283,14 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
                 name='totalArea'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Total Area (sq ft)</FormLabel>
+                    <FormLabel>Total Area (M/KM)</FormLabel>
                     <FormControl>
                       <Input
                         type='number'
                         min='0'
                         step='0.01'
                         {...field}
-                        placeholder='e.g., 1200'
+                        placeholder='e.g. 2 KM'
                       />
                     </FormControl>
                     <FormMessage />
@@ -526,6 +526,9 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
             {/* Amenities Section */}
             <div className='space-y-4'>
               <FormLabel>Amenities</FormLabel>
+              <p className='text-sm text-gray-400'>
+                Add amenity one by one in the field
+              </p>
               {amenities.map((amenity, index) => (
                 <div key={index} className='flex items-center gap-2'>
                   <div className='flex-1'>
