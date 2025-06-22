@@ -1,7 +1,7 @@
 'use client';
 
-import * as React from 'react';
 import { IconTrendingUp } from '@tabler/icons-react';
+import { useEffect, useState } from 'react';
 import { Label, Pie, PieChart } from 'recharts';
 
 import {
@@ -18,14 +18,6 @@ import {
   ChartTooltip,
   ChartTooltipContent
 } from '@/components/ui/chart';
-
-const chartData = [
-  { browser: 'chrome', visitors: 275, fill: 'var(--primary)' },
-  { browser: 'safari', visitors: 200, fill: 'var(--primary-light)' },
-  { browser: 'firefox', visitors: 287, fill: 'var(--primary-lighter)' },
-  { browser: 'edge', visitors: 173, fill: 'var(--primary-dark)' },
-  { browser: 'other', visitors: 190, fill: 'var(--primary-darker)' }
-];
 
 const chartConfig = {
   visitors: {
@@ -54,8 +46,39 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function PieGraph() {
-  const totalVisitors = React.useMemo(() => {
-    return chartData.reduce((acc, curr) => acc + curr.visitors, 0);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [totalVisitors, setTotalVisitors] = useState(0);
+
+  useEffect(() => {
+    async function fetchData() {
+      // Example: Fetch visit requests and group by user role (replace with your real API logic)
+      const res = await fetch('/api/visit-requests');
+      const data = await res.json();
+      // Example transformation: group by user role
+      const grouped: Record<string, { visitors: number; fill: string }> = {};
+      data.forEach((item: any) => {
+        const role = item.user?.role || 'GUEST';
+        if (!grouped[role])
+          grouped[role] = { visitors: 0, fill: 'var(--primary)' };
+        grouped[role].visitors += 1;
+      });
+      const colors = [
+        'var(--primary)',
+        'var(--primary-light)',
+        'var(--primary-lighter)',
+        'var(--primary-dark)',
+        'var(--primary-darker)'
+      ];
+      let i = 0;
+      const chartArr = Object.entries(grouped).map(([role, obj]) => ({
+        browser: role,
+        visitors: obj.visitors,
+        fill: colors[i++ % colors.length]
+      }));
+      setChartData(chartArr);
+      setTotalVisitors(chartArr.reduce((acc, curr) => acc + curr.visitors, 0));
+    }
+    fetchData();
   }, []);
 
   return (
@@ -64,9 +87,9 @@ export function PieGraph() {
         <CardTitle>Pie Chart - Donut with Text</CardTitle>
         <CardDescription>
           <span className='hidden @[540px]/card:block'>
-            Total visitors by browser for the last 6 months
+            Total visitors by user role for the last 6 months
           </span>
-          <span className='@[540px]/card:hidden'>Browser distribution</span>
+          <span className='@[540px]/card:hidden'>User role distribution</span>
         </CardDescription>
       </CardHeader>
       <CardContent className='px-2 pt-4 sm:px-6 sm:pt-6'>
@@ -76,29 +99,27 @@ export function PieGraph() {
         >
           <PieChart>
             <defs>
-              {['chrome', 'safari', 'firefox', 'edge', 'other'].map(
-                (browser, index) => (
-                  <linearGradient
-                    key={browser}
-                    id={`fill${browser}`}
-                    x1='0'
-                    y1='0'
-                    x2='0'
-                    y2='1'
-                  >
-                    <stop
-                      offset='0%'
-                      stopColor='var(--primary)'
-                      stopOpacity={1 - index * 0.15}
-                    />
-                    <stop
-                      offset='100%'
-                      stopColor='var(--primary)'
-                      stopOpacity={0.8 - index * 0.15}
-                    />
-                  </linearGradient>
-                )
-              )}
+              {chartData.map((item, index) => (
+                <linearGradient
+                  key={item.browser}
+                  id={`fill${item.browser}`}
+                  x1='0'
+                  y1='0'
+                  x2='0'
+                  y2='1'
+                >
+                  <stop
+                    offset='0%'
+                    stopColor='var(--primary)'
+                    stopOpacity={1 - index * 0.15}
+                  />
+                  <stop
+                    offset='100%'
+                    stopColor='var(--primary)'
+                    stopOpacity={0.8 - index * 0.15}
+                  />
+                </linearGradient>
+              ))}
             </defs>
             <ChartTooltip
               cursor={false}
@@ -149,13 +170,15 @@ export function PieGraph() {
         </ChartContainer>
       </CardContent>
       <CardFooter className='flex-col gap-2 text-sm'>
-        <div className='flex items-center gap-2 leading-none font-medium'>
-          Chrome leads with{' '}
-          {((chartData[0].visitors / totalVisitors) * 100).toFixed(1)}%{' '}
-          <IconTrendingUp className='h-4 w-4' />
-        </div>
+        {chartData.length > 0 && (
+          <div className='flex items-center gap-2 leading-none font-medium'>
+            {chartData[0].browser} leads with{' '}
+            {((chartData[0].visitors / totalVisitors) * 100).toFixed(1)}%{' '}
+            <IconTrendingUp className='h-4 w-4' />
+          </div>
+        )}
         <div className='text-muted-foreground leading-none'>
-          Based on data from January - June 2024
+          Based on real-time data
         </div>
       </CardFooter>
     </Card>

@@ -2,6 +2,7 @@
 
 import { IconTrendingUp } from '@tabler/icons-react';
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
+import { useEffect, useState } from 'react';
 
 import {
   Card,
@@ -18,15 +19,6 @@ import {
   ChartTooltipContent
 } from '@/components/ui/chart';
 
-const chartData = [
-  { month: 'January', desktop: 186, mobile: 80 },
-  { month: 'February', desktop: 305, mobile: 200 },
-  { month: 'March', desktop: 237, mobile: 120 },
-  { month: 'April', desktop: 73, mobile: 190 },
-  { month: 'May', desktop: 209, mobile: 130 },
-  { month: 'June', desktop: 214, mobile: 140 }
-];
-
 const chartConfig = {
   visitors: {
     label: 'Visitors'
@@ -42,6 +34,30 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 export function AreaGraph() {
+  const [chartData, setChartData] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchData() {
+      // Example: Fetch visit requests and group by month/device (replace with your real API logic)
+      const res = await fetch('/api/visit-requests');
+      const data = await res.json();
+      // Example transformation: group by month, count as desktop/mobile (customize as needed)
+      const grouped: Record<string, { desktop: number; mobile: number }> = {};
+      data.forEach((item: any) => {
+        const month = item.date
+          ? new Date(item.date).toLocaleString('default', { month: 'long' })
+          : 'Unknown';
+        if (!grouped[month]) grouped[month] = { desktop: 0, mobile: 0 };
+        if (item.user?.role === 'CLIENT') grouped[month].desktop += 1;
+        else grouped[month].mobile += 1;
+      });
+      setChartData(
+        Object.entries(grouped).map(([month, counts]) => ({ month, ...counts }))
+      );
+    }
+    fetchData();
+  }, []);
+
   return (
     <Card className='@container/card'>
       <CardHeader>

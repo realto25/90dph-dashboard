@@ -1,3 +1,4 @@
+'use client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Card,
@@ -6,65 +7,59 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
-
-const salesData = [
-  {
-    name: 'Olivia Martin',
-    email: 'olivia.martin@email.com',
-    avatar: 'https://api.slingacademy.com/public/sample-users/1.png',
-    fallback: 'OM',
-    amount: '+$1,999.00'
-  },
-  {
-    name: 'Jackson Lee',
-    email: 'jackson.lee@email.com',
-    avatar: 'https://api.slingacademy.com/public/sample-users/2.png',
-    fallback: 'JL',
-    amount: '+$39.00'
-  },
-  {
-    name: 'Isabella Nguyen',
-    email: 'isabella.nguyen@email.com',
-    avatar: 'https://api.slingacademy.com/public/sample-users/3.png',
-    fallback: 'IN',
-    amount: '+$299.00'
-  },
-  {
-    name: 'William Kim',
-    email: 'will@email.com',
-    avatar: 'https://api.slingacademy.com/public/sample-users/4.png',
-    fallback: 'WK',
-    amount: '+$99.00'
-  },
-  {
-    name: 'Sofia Davis',
-    email: 'sofia.davis@email.com',
-    avatar: 'https://api.slingacademy.com/public/sample-users/5.png',
-    fallback: 'SD',
-    amount: '+$39.00'
-  }
-];
+import { useEffect, useState } from 'react';
 
 export function RecentSales() {
+  const [clients, setClients] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function fetchClients() {
+      const res = await fetch('/api/all-users');
+      const data = await res.json();
+      // Filter for CLIENT role and sort by createdAt desc
+      const clients = (data.data || [])
+        .filter((u: any) => u.role === 'CLIENT')
+        .sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )
+        .slice(0, 5); // Show only the 5 most recent clients
+      setClients(clients);
+    }
+    fetchClients();
+  }, []);
+
   return (
     <Card className='h-full'>
       <CardHeader>
-        <CardTitle>Recent Sales</CardTitle>
-        <CardDescription>You made 265 sales this month.</CardDescription>
+        <CardTitle>Recent Clients</CardTitle>
+        <CardDescription>New clients who joined recently.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className='space-y-8'>
-          {salesData.map((sale, index) => (
+          {clients.map((client, index) => (
             <div key={index} className='flex items-center'>
               <Avatar className='h-9 w-9'>
-                <AvatarImage src={sale.avatar} alt='Avatar' />
-                <AvatarFallback>{sale.fallback}</AvatarFallback>
+                {/* Optionally use a generated avatar or fallback */}
+                <AvatarImage
+                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(client.name || client.email)}`}
+                  alt='Avatar'
+                />
+                <AvatarFallback>
+                  {(client.name || client.email || '')
+                    .slice(0, 2)
+                    .toUpperCase()}
+                </AvatarFallback>
               </Avatar>
               <div className='ml-4 space-y-1'>
-                <p className='text-sm leading-none font-medium'>{sale.name}</p>
-                <p className='text-muted-foreground text-sm'>{sale.email}</p>
+                <p className='text-sm leading-none font-medium'>
+                  {client.name || 'No Name'}
+                </p>
+                <p className='text-muted-foreground text-sm'>{client.email}</p>
+                <p className='text-muted-foreground text-xs'>
+                  Joined {new Date(client.createdAt).toLocaleDateString()}
+                </p>
               </div>
-              <div className='ml-auto font-medium'>{sale.amount}</div>
             </div>
           ))}
         </div>
