@@ -36,7 +36,8 @@ import {
   IconUsers,
   IconUsersGroup,
   IconUserX,
-  IconX
+  IconX,
+  IconBellCheck
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -46,6 +47,7 @@ export const Icons = {
   logo: IconCommand,
   login: IconLogin,
   close: IconX,
+  bell:IconBellCheck,
   product: IconShoppingBag,
   spinner: IconLoader2,
   kanban: IconLayoutKanban,

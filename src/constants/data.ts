@@ -38,6 +38,14 @@ export const navItems: NavItem[] = [
     items: [] // No child items
   },
   {
+    title: 'Notifications',
+    url: '/dashboard/notifications',
+    icon: 'bell',
+    shortcut: ['n', 'N'],
+    isActive: false,
+    items: [] // No child items
+  },
+  {
     title: 'Requests',
     url: '#', // Placeholder as there is no direct link for the parent
     icon: 'requests',

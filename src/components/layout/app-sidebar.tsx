@@ -56,7 +56,7 @@ export const company = {
 
 const tenants = [
   { id: '1', name: 'Admin' },
-  { id: '2', name: 'Super Admin' }
+
 ];
 
 export default function AppSidebar() {
