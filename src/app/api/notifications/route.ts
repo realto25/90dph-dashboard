@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       notifications = await prisma.$transaction(
         users.map((user) =>
           prisma.notification.create({
-            data: { message, title, userId: user.id, targetRole }
+            data: { message, title, userId: user.id }
           })
         )
       );

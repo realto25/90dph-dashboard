@@ -84,7 +84,7 @@ export const navItems: NavItem[] = [
         url: '/dashboard/assign-camera',
         icon: 'userPen',
         shortcut: ['C', 'c']
-      },
+      }
       // {
       //   title: 'Login',
       //   shortcut: ['l', 'l'],
@@ -157,6 +157,14 @@ export const navItems: NavItem[] = [
     url: '/dashboard/all-users',
     icon: 'allUsers',
     shortcut: ['U', 'u'],
+    isActive: false,
+    items: [] // No child items
+  },
+  {
+    title: 'Banner Ads',
+    url: '/dashboard/banner-ads',
+    icon: 'media',
+    shortcut: ['B', 'a'],
     isActive: false,
     items: [] // No child items
   }
