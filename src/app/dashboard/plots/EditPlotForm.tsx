@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -19,6 +20,7 @@ const EditPlotForm = ({
   onSuccess
 }: EditPlotFormProps) => {
   const router = useRouter();
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
@@ -170,9 +172,16 @@ const EditPlotForm = ({
 
   if (!isOpen) return null;
 
+  // Theme styles
+  const getThemeStyles = () => {
+    return theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-black';
+  };
+
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>
-      <div className='max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white p-6'>
+      <div
+        className={`max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg p-6 ${getThemeStyles()}`}
+      >
         <div className='mb-4 flex items-center justify-between'>
           <h2 className='text-xl font-semibold'>Edit Plot</h2>
           <Button variant='ghost' onClick={onClose}>

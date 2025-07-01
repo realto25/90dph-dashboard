@@ -16,7 +16,10 @@ const plotSchema = z.object({
   facing: z.string().min(1, 'Facing is required'),
   amenities: z.array(z.string()),
   description: z.string().min(1, 'Description is required'),
-  projectId: z.string().min(1, 'Project ID is required')
+  projectId: z.string().min(1, 'Project ID is required'),
+  mapEmbedUrl: z.string().optional(),
+  qrUrl: z.string().optional(),
+  totalArea: z.number()
 });
 
 export async function GET(request: NextRequest) {
@@ -61,7 +64,8 @@ export async function POST(request: NextRequest) {
       ...body,
       price: parseInt(body.price),
       latitude: parseFloat(body.latitude),
-      longitude: parseFloat(body.longitude)
+      longitude: parseFloat(body.longitude),
+      totalArea: parseFloat(body.totalArea)
     });
 
     // Check if project exists

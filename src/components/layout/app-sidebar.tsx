@@ -54,10 +54,7 @@ export const company = {
   plan: ''
 };
 
-const tenants = [
-  { id: '1', name: 'Admin' },
-
-];
+const tenants = [{ id: '1', name: 'Admin' }];
 
 export default function AppSidebar() {
   const pathname = usePathname();
@@ -65,6 +62,8 @@ export default function AppSidebar() {
   const { user } = useUser();
   const { userRole, isLoading } = useAuth();
   const router = useRouter();
+  const [navState, setNavState] = React.useState(navItems);
+
   const handleSwitchTenant = (_tenantId: string) => {
     // Tenant switching functionality would be implemented here
   };
@@ -96,6 +95,26 @@ export default function AppSidebar() {
     });
   }
 
+  const handleNavClick = (url: string) => {
+    setNavState((prev) =>
+      prev.map((item) => {
+        if (item.url === url) {
+          return { ...item, hasNew: false };
+        }
+        if (item.items && item.items.length > 0) {
+          return {
+            ...item,
+            items: item.items.map((sub) =>
+              sub.url === url ? { ...sub, hasNew: false } : sub
+            )
+          };
+        }
+        return item;
+      })
+    );
+    router.push(url);
+  };
+
   return (
     <Sidebar collapsible='icon'>
       <SidebarHeader>
@@ -114,7 +133,7 @@ export default function AppSidebar() {
                 Loading...
               </div>
             ) : (
-              filteredNavItems.map((item) => {
+              navState.map((item) => {
                 const key =
                   item.url === '#' ? `${item.title}-${item.url}` : item.url;
                 const Icon = item.icon ? Icons[item.icon] : Icons.logo;
@@ -130,9 +149,13 @@ export default function AppSidebar() {
                         <SidebarMenuButton
                           tooltip={item.title}
                           isActive={pathname === item.url}
+                          onClick={() => handleNavClick(item.url)}
                         >
                           {item.icon && <Icon />}
                           <span>{item.title}</span>
+                          {item.hasNew && (
+                            <span className='ml-2 inline-block h-2 w-2 rounded-full bg-red-500' />
+                          )}
                           <IconChevronRight className='ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90' />
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
@@ -145,9 +168,13 @@ export default function AppSidebar() {
                               <SidebarMenuSubButton
                                 asChild
                                 isActive={pathname === subItem.url}
+                                onClick={() => handleNavClick(subItem.url)}
                               >
                                 <Link href={subItem.url}>
                                   <span>{subItem.title}</span>
+                                  {subItem.hasNew && (
+                                    <span className='ml-2 inline-block h-2 w-2 rounded-full bg-red-500' />
+                                  )}
                                 </Link>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
@@ -162,10 +189,14 @@ export default function AppSidebar() {
                       asChild
                       tooltip={item.title}
                       isActive={pathname === item.url}
+                      onClick={() => handleNavClick(item.url)}
                     >
                       <Link href={item.url}>
                         <Icon />
                         <span>{item.title}</span>
+                        {item.hasNew && (
+                          <span className='ml-2 inline-block h-2 w-2 rounded-full bg-red-500' />
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

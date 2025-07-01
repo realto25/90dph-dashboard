@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import QRCode from 'qrcode';
-
 // GET - Fetch all visit requests or filter by user, manager, or clerkId
 export async function GET(request: NextRequest) {
   try {

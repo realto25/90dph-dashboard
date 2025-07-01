@@ -282,9 +282,9 @@ model Attendance {
   id        String   @id @default(cuid())
   manager   User     @relation(fields: [managerId], references: [id], onDelete: Cascade)
   managerId String
-  office    Office   @relation(fields: [officeId], references: [id], onDelete: Cascade)
-  officeId  String
-  status    String   @default("PRESENT")
+  office    Office?  @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  officeId  String?
+  status    AttendanceStatus @default(PRESENT)
   createdAt DateTime @default(now())
 
   @@unique([managerId, officeId, createdAt])

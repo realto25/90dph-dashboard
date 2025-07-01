@@ -24,7 +24,7 @@ function calculateDistance(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { clerkId, latitude, longitude } = body;
+    const { clerkId, latitude, longitude, attendanceType } = body;
 
     if (!clerkId || latitude === undefined || longitude === undefined) {
       return NextResponse.json(
@@ -60,6 +60,47 @@ export async function POST(req: NextRequest) {
     const todayEnd = new Date(todayStart);
     todayEnd.setUTCDate(todayEnd.getUTCDate() + 1);
 
+    // --- ON DUTY LOGIC ---
+    if (attendanceType === 'ON_DUTY') {
+      // Check if already marked on duty today
+      const existingOnDuty = await prisma.attendance.findFirst({
+        where: {
+          managerId: manager.id,
+          status: 'ON_DUTY',
+          createdAt: {
+            gte: todayStart,
+            lt: todayEnd
+          }
+        }
+      });
+
+      if (existingOnDuty) {
+        return NextResponse.json({
+          message: 'On Duty already marked for today',
+          date: existingOnDuty.createdAt.toDateString()
+        });
+      }
+
+      // Create On Duty attendance record (no office required)
+      const attendance = await prisma.attendance.create({
+        data: {
+          managerId: manager.id,
+          status: 'ON_DUTY'
+          // officeId: undefined, // not set
+        }
+      });
+
+      return NextResponse.json({
+        message: 'On Duty marked successfully',
+        attendance: {
+          id: attendance.id,
+          status: attendance.status,
+          createdAt: attendance.createdAt
+        }
+      });
+    }
+
+    // --- REGULAR ATTENDANCE LOGIC (default) ---
     let nearestOffice = null;
     let minDistance = Infinity;
 
@@ -122,7 +163,7 @@ export async function POST(req: NextRequest) {
             id: attendance.id,
             status: attendance.status,
             createdAt: attendance.createdAt,
-            office: attendance.office.name
+            office: attendance.office ? attendance.office.name : null
           },
           distance: Math.round(distance)
         });
@@ -166,21 +207,23 @@ export async function GET(req: NextRequest) {
     const clerkId = searchParams.get('clerkId');
     const date = searchParams.get('date');
 
-    if (!clerkId) {
-      return NextResponse.json({ error: 'Missing clerkId' }, { status: 400 });
+    let manager;
+    if (clerkId) {
+      manager = await prisma.user.findUnique({
+        where: { clerkId }
+      });
+      if (!manager) {
+        return NextResponse.json(
+          { error: 'Manager not found' },
+          { status: 404 }
+        );
+      }
     }
 
-    const manager = await prisma.user.findUnique({
-      where: { clerkId }
-    });
-
-    if (!manager) {
-      return NextResponse.json({ error: 'Manager not found' }, { status: 404 });
+    let whereClause: any = {};
+    if (manager) {
+      whereClause.managerId = manager.id;
     }
-
-    let whereClause: any = {
-      managerId: manager.id
-    };
 
     // If date is provided, filter by that date
     if (date) {
@@ -208,6 +251,11 @@ export async function GET(req: NextRequest) {
           select: {
             name: true
           }
+        },
+        manager: {
+          select: {
+            name: true
+          }
         }
       },
       orderBy: {
@@ -215,7 +263,13 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    return NextResponse.json(attendances);
+    // Add managerName to each record for frontend
+    const result = attendances.map((a) => ({
+      ...a,
+      managerName: a.manager?.name || ''
+    }));
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching attendance:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

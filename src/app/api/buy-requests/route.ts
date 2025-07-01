@@ -1,54 +1,84 @@
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
+// Helper: Find user by Clerk ID or DB ID
+async function findUser(userId: string) {
+  // Try by DB ID first, then by Clerk ID
+  let user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) {
+    user = await prisma.user.findUnique({ where: { clerkId: userId } });
+  }
+  return user;
+}
+
+// POST - Create a new buy request
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { landId, userId, message } = body;
+    let { plotId, userId, message } = body;
 
-    if (!landId || !userId || !message) {
+    if (!plotId || !userId || !message) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Check if land exists and is available
-    const land = await prisma.land.findUnique({
-      where: { id: landId },
+    // Ensure plotId is a string (not array)
+    if (Array.isArray(plotId)) plotId = plotId[0];
+
+    // Find or create available land for this plot
+    let land = await prisma.land.findFirst({
+      where: { plotId: plotId, status: 'AVAILABLE' },
       include: { plot: true }
     });
 
     if (!land) {
-      return NextResponse.json({ error: 'Land not found' }, { status: 404 });
+      const plot = await prisma.plot.findUnique({ where: { id: plotId } });
+      if (!plot) {
+        return NextResponse.json({ error: 'Plot not found' }, { status: 404 });
+      }
+      if (plot.status !== 'AVAILABLE') {
+        return NextResponse.json(
+          { error: 'Plot is not available for purchase' },
+          { status: 400 }
+        );
+      }
+      // Create dummy land
+      land = await prisma.land.create({
+        data: {
+          number: 'AUTO-GENERATED',
+          size: plot.dimension,
+          price: plot.price,
+          status: 'AVAILABLE',
+          plotId: plot.id
+        },
+        include: { plot: true }
+      });
     }
 
-    if (land.status !== 'AVAILABLE') {
-      return NextResponse.json(
-        { error: 'Land is not available for purchase' },
-        { status: 400 }
-      );
+    // Find user by DB ID or Clerk ID
+    const user = await findUser(userId);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Create buy request
     const buyRequest = await prisma.buyRequest.create({
       data: {
-        landId,
-        userId,
+        landId: land.id,
+        userId: user.id,
         message
       },
       include: {
-        land: {
-          include: {
-            plot: true
-          }
-        },
+        land: { include: { plot: true } },
         user: {
           select: {
             id: true,
             name: true,
             email: true,
-            phone: true
+            phone: true,
+            clerkId: true
           }
         }
       }
@@ -64,6 +94,7 @@ export async function POST(request: Request) {
   }
 }
 
+// GET - Fetch buy requests (optionally by userId and/or status)
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -77,23 +108,18 @@ export async function GET(request: Request) {
     const buyRequests = await prisma.buyRequest.findMany({
       where: whereClause,
       include: {
-        land: {
-          include: {
-            plot: true
-          }
-        },
+        land: { include: { plot: true } },
         user: {
           select: {
             id: true,
             name: true,
             email: true,
-            phone: true
+            phone: true,
+            clerkId: true
           }
         }
       },
-      orderBy: {
-        createdAt: 'desc'
-      }
+      orderBy: { createdAt: 'desc' }
     });
 
     return NextResponse.json(buyRequests);
@@ -106,6 +132,7 @@ export async function GET(request: Request) {
   }
 }
 
+// PATCH - Update buy request status
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
@@ -122,17 +149,14 @@ export async function PATCH(request: Request) {
       where: { id },
       data: { status },
       include: {
-        land: {
-          include: {
-            plot: true
-          }
-        },
+        land: { include: { plot: true } },
         user: {
           select: {
             id: true,
             name: true,
             email: true,
-            phone: true
+            phone: true,
+            clerkId: true
           }
         }
       }

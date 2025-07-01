@@ -11,6 +11,7 @@ export interface NavItem {
   description?: string;
   isActive?: boolean;
   items?: NavItem[];
+  hasNew?: boolean;
 }
 
 export interface NavItemWithChildren extends NavItem {

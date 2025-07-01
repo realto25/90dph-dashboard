@@ -43,6 +43,7 @@ export const navItems: NavItem[] = [
     icon: 'bell',
     shortcut: ['n', 'N'],
     isActive: false,
+    hasNew: true,
     items: [] // No child items
   },
   {
@@ -56,13 +57,15 @@ export const navItems: NavItem[] = [
         title: 'Visit Request',
         url: '/dashboard/visit-requests',
         icon: 'userPen',
-        shortcut: ['v', 'V']
+        shortcut: ['v', 'V'],
+        hasNew: true
       },
       {
         title: 'Buy Request',
         shortcut: ['B', 'b'],
         url: '/dashboard/buy-requests',
-        icon: 'login'
+        icon: 'login',
+        hasNew: true
       },
       {
         title: 'Sell Request',
@@ -132,6 +135,12 @@ export const navItems: NavItem[] = [
         shortcut: ['l', 'l'],
         url: '/dashboard/leave-requests',
         icon: 'login'
+      },
+      {
+        title: 'Attendance List',
+        url: '/dashboard/attendance',
+        icon: 'userPen',
+        shortcut: ['A', 'a']
       }
     ]
   },
