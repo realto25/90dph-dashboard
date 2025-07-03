@@ -3,11 +3,11 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const { landId, ipAddress, label } = await req.json();
+    const { landId, cameras } = await req.json();
 
-    if (!landId || !ipAddress) {
+    if (!landId || !Array.isArray(cameras) || cameras.length === 0) {
       return NextResponse.json(
-        { message: 'Land ID and IP Address are required' },
+        { message: 'Land ID and at least one camera are required' },
         { status: 400 }
       );
     }
@@ -29,23 +29,22 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create or update camera
-    const camera = await prisma.landCamera.upsert({
-      where: { landId },
-      update: {
-        ipAddress,
-        label: label || null
-      },
-      create: {
-        landId,
-        ipAddress,
-        label: label || null
-      }
-    });
+    // Create multiple cameras
+    const createdCameras = await prisma.$transaction(
+      cameras.map((cam: { ipAddress: string; label?: string }) =>
+        prisma.landCamera.create({
+          data: {
+            landId,
+            ipAddress: cam.ipAddress,
+            label: cam.label || null
+          }
+        })
+      )
+    );
 
-    return NextResponse.json(camera);
+    return NextResponse.json(createdCameras);
   } catch (error) {
-    console.error('Error assigning camera to land:', error);
+    console.error('Error assigning cameras to land:', error);
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
@@ -71,7 +70,7 @@ export async function GET(req: Request) {
         status: 'SOLD'
       },
       include: {
-        camera: true,
+        cameras: true,
         plot: {
           select: {
             title: true,
@@ -87,6 +86,50 @@ export async function GET(req: Request) {
     return NextResponse.json(lands);
   } catch (error) {
     console.error('Error fetching lands with cameras:', error);
+    return NextResponse.json(
+      { message: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json(
+        { message: 'Camera ID is required' },
+        { status: 400 }
+      );
+    }
+    await prisma.landCamera.delete({ where: { id } });
+    return NextResponse.json({ message: 'Camera deleted' });
+  } catch (error) {
+    console.error('Error deleting land camera:', error);
+    return NextResponse.json(
+      { message: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const { id, ipAddress, label } = await req.json();
+    if (!id || !ipAddress) {
+      return NextResponse.json(
+        { message: 'Camera ID and IP Address are required' },
+        { status: 400 }
+      );
+    }
+    const updated = await prisma.landCamera.update({
+      where: { id },
+      data: { ipAddress, label: label || null }
+    });
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error('Error updating land camera:', error);
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

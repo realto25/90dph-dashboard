@@ -176,6 +176,14 @@ export const navItems: NavItem[] = [
     shortcut: ['B', 'a'],
     isActive: false,
     items: [] // No child items
+  },
+  {
+    title: 'All Cameras',
+    url: '/dashboard/cameras',
+    icon: 'camera',
+    shortcut: ['C', 'a'],
+    isActive: false,
+    items: []
   }
 ];
 

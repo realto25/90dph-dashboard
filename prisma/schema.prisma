@@ -40,7 +40,7 @@ model Plot {
   owner         User?          @relation("PlotOwner", fields: [ownerId], references: [id])
   ownerId       String?
   visitRequests VisitRequest[]
-  camera        Camera?
+  cameras       Camera[]
   clientPlot    ClientPlot?
   sellRequests  SellRequest[]
   lands         Land[]
@@ -84,7 +84,7 @@ model ClientPlot {
 model Camera {
   id        String   @id @default(cuid())
   plot      Plot     @relation(fields: [plotId], references: [id], onDelete: Cascade)
-  plotId    String   @unique
+  plotId    String
   ipAddress String
   label     String?
   createdAt DateTime @default(now())
@@ -204,7 +204,7 @@ model Land {
   plotId      String
   owner       User?        @relation("LandOwner", fields: [ownerId], references: [id])
   ownerId     String?
-  camera      LandCamera?
+  cameras     LandCamera[]
   buyRequests BuyRequest[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -217,7 +217,7 @@ model Land {
 model LandCamera {
   id        String   @id @default(cuid())
   land      Land     @relation(fields: [landId], references: [id], onDelete: Cascade)
-  landId    String   @unique
+  landId    String
   ipAddress String
   label     String?
   createdAt DateTime @default(now())
@@ -279,13 +279,13 @@ model Office {
 }
 
 model Attendance {
-  id        String   @id @default(cuid())
-  manager   User     @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  id        String           @id @default(cuid())
+  manager   User             @relation(fields: [managerId], references: [id], onDelete: Cascade)
   managerId String
-  office    Office?  @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  office    Office?          @relation(fields: [officeId], references: [id], onDelete: Cascade)
   officeId  String?
   status    AttendanceStatus @default(PRESENT)
-  createdAt DateTime @default(now())
+  createdAt DateTime         @default(now())
 
   @@unique([managerId, officeId, createdAt])
   @@index([managerId, createdAt])

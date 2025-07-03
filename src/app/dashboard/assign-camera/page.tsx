@@ -51,10 +51,11 @@ interface Plot {
     id: string;
     name: string;
   } | null;
-  camera?: {
+  cameras: {
+    id: string;
     ipAddress: string;
     label: string | null;
-  } | null;
+  }[];
 }
 
 interface Land {
@@ -66,10 +67,11 @@ interface Land {
     title: string;
     location: string;
   };
-  camera?: {
+  cameras: {
+    id: string;
     ipAddress: string;
     label: string | null;
-  } | null;
+  }[];
 }
 
 interface CameraAssignment {
@@ -81,6 +83,7 @@ interface CameraAssignment {
   number?: string;
   status: string;
   camera: {
+    id: string;
     ipAddress: string;
     label: string | null;
   };
@@ -131,6 +134,9 @@ export default function AssignCameraPage() {
   const [editingAssignment, setEditingAssignment] =
     useState<CameraAssignment | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [cameraInputs, setCameraInputs] = useState([
+    { ipAddress: '', label: '' }
+  ]);
 
   // Fetch projects with retry
   useEffect(() => {
@@ -219,30 +225,30 @@ export default function AssignCameraPage() {
 
           // Combine and format assignments
           const formattedAssignments: CameraAssignment[] = [
-            ...plotsData
-              .filter((plot) => plot.camera)
-              .map((plot) => ({
-                id: plot.id,
+            ...plotsData.flatMap((plot: any) =>
+              (plot.cameras || []).map((camera: any) => ({
+                id: camera.id,
                 type: 'plot' as const,
                 title: plot.title,
                 location: plot.location,
                 status: plot.status,
-                camera: plot.camera!,
+                camera,
                 owner: plot.owner!
-              })),
-            ...landsData
-              .filter((land) => land.camera)
-              .map((land) => ({
-                id: land.id,
+              }))
+            ),
+            ...landsData.flatMap((land: any) =>
+              (land.cameras || []).map((camera: any) => ({
+                id: camera.id,
                 type: 'land' as const,
                 title: land.plot.title,
                 location: land.plot.location,
                 size: land.size,
                 number: land.number,
                 status: land.status,
-                camera: land.camera!,
+                camera,
                 owner: { id: selectedClient, name: '', email: '' }
               }))
+            )
           ];
 
           // Fill in owner details for lands
@@ -274,40 +280,65 @@ export default function AssignCameraPage() {
   }, [selectedClient, selectedProject, clients]);
 
   const handleAssign = async () => {
-    if ((!selectedPlot && !selectedLand) || !ipAddress) {
-      toast.error('Please select a plot/land and enter an IP address');
+    if (
+      (!selectedPlot && !selectedLand) ||
+      cameraInputs.some((cam) => !cam.ipAddress)
+    ) {
+      toast.error('Please select a plot/land and enter all IP addresses');
       return;
     }
 
     setLoading(true);
     try {
-      const endpoint = selectedPlot
-        ? '/api/assign-camera'
-        : '/api/assign-land-camera';
-      const id = selectedPlot || selectedLand;
-      const idField = selectedPlot ? 'plotId' : 'landId';
-
-      const res = await fetchWithRetry(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          [idField]: id,
-          ipAddress,
-          label: label || null
-        })
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Failed to assign camera');
+      if (editingAssignment) {
+        // Only allow editing one camera at a time
+        const cam = cameraInputs[0];
+        const endpoint =
+          editingAssignment.type === 'plot'
+            ? '/api/assign-camera'
+            : '/api/assign-land-camera';
+        const res = await fetchWithRetry(endpoint, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: editingAssignment.camera.id,
+            ipAddress: cam.ipAddress,
+            label: cam.label
+          })
+        });
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to update camera');
+        }
+        toast.success('Camera updated successfully!');
+      } else {
+        const endpoint = selectedPlot
+          ? '/api/assign-camera'
+          : '/api/assign-land-camera';
+        const id = selectedPlot || selectedLand;
+        const idField = selectedPlot ? 'plotId' : 'landId';
+        const cameras = cameraInputs.map((cam) => ({
+          ipAddress: cam.ipAddress,
+          label: cam.label || null
+        }));
+        const res = await fetchWithRetry(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ [idField]: id, cameras })
+        });
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.message || 'Failed to assign cameras');
+        }
+        toast.success('Cameras assigned successfully!');
       }
-
-      toast.success('Camera assigned successfully!');
       setIsDialogOpen(false);
+      setCameraInputs([{ ipAddress: '', label: '' }]);
+      setEditingAssignment(null);
       refreshData();
     } catch (error: any) {
       toast.error(
-        error.message || 'Failed to assign camera. Please try again.'
+        error.message || 'Failed to save camera(s). Please try again.'
       );
     } finally {
       setLoading(false);
@@ -316,8 +347,19 @@ export default function AssignCameraPage() {
 
   const handleEdit = (assignment: CameraAssignment) => {
     setEditingAssignment(assignment);
-    setIpAddress(assignment.camera.ipAddress);
-    setLabel(assignment.camera.label || '');
+    setCameraInputs([
+      {
+        ipAddress: assignment.camera.ipAddress,
+        label: assignment.camera.label || ''
+      }
+    ]);
+    if (assignment.type === 'plot') {
+      setSelectedPlot(assignment.id);
+      setSelectedLand('');
+    } else {
+      setSelectedLand(assignment.id);
+      setSelectedPlot('');
+    }
     setIsDialogOpen(true);
   };
 
@@ -330,9 +372,12 @@ export default function AssignCameraPage() {
         assignment.type === 'plot'
           ? '/api/assign-camera'
           : '/api/assign-land-camera';
-      const res = await fetchWithRetry(`${endpoint}?id=${assignment.id}`, {
-        method: 'DELETE'
-      });
+      const res = await fetchWithRetry(
+        `${endpoint}?id=${assignment.camera.id}`,
+        {
+          method: 'DELETE'
+        }
+      );
 
       if (!res.ok) {
         throw new Error('Failed to delete camera assignment');
@@ -370,30 +415,30 @@ export default function AssignCameraPage() {
 
         // Update assignments
         const formattedAssignments: CameraAssignment[] = [
-          ...plotsData
-            .filter((plot) => plot.camera)
-            .map((plot) => ({
-              id: plot.id,
+          ...plotsData.flatMap((plot: any) =>
+            (plot.cameras || []).map((camera: any) => ({
+              id: camera.id,
               type: 'plot' as const,
               title: plot.title,
               location: plot.location,
               status: plot.status,
-              camera: plot.camera!,
+              camera,
               owner: plot.owner!
-            })),
-          ...landsData
-            .filter((land) => land.camera)
-            .map((land) => ({
-              id: land.id,
+            }))
+          ),
+          ...landsData.flatMap((land: any) =>
+            (land.cameras || []).map((camera: any) => ({
+              id: camera.id,
               type: 'land' as const,
               title: land.plot.title,
               location: land.plot.location,
               size: land.size,
               number: land.number,
               status: land.status,
-              camera: land.camera!,
+              camera,
               owner: { id: selectedClient, name: '', email: '' }
             }))
+          )
         ];
 
         const client = clients.find((c) => c.id === selectedClient);
@@ -415,6 +460,12 @@ export default function AssignCameraPage() {
     } finally {
       setFetchingData(false);
     }
+  };
+
+  const openDialog = () => {
+    setEditingAssignment(null);
+    setCameraInputs([{ ipAddress: '', label: '' }]);
+    setIsDialogOpen(true);
   };
 
   return (
@@ -483,7 +534,13 @@ export default function AssignCameraPage() {
 
             <div className='space-y-2'>
               <Label>Assign New Camera</Label>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <Dialog
+                open={isDialogOpen}
+                onOpenChange={(v) => {
+                  if (v) openDialog();
+                  else setIsDialogOpen(false);
+                }}
+              >
                 <DialogTrigger asChild>
                   <Button className='w-full'>
                     <Camera className='mr-2 h-4 w-4' />
@@ -493,7 +550,9 @@ export default function AssignCameraPage() {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>
-                      {editingAssignment ? 'Edit Camera' : 'Assign New Camera'}
+                      {editingAssignment
+                        ? 'Edit Camera'
+                        : 'Assign New Camera(s)'}
                     </DialogTitle>
                   </DialogHeader>
                   <div className='space-y-4 py-4'>
@@ -502,6 +561,7 @@ export default function AssignCameraPage() {
                       <Select
                         value={selectedPlot ? 'plot' : 'land'}
                         onValueChange={(value) => {
+                          if (editingAssignment) return;
                           setSelectedPlot('');
                           setSelectedLand('');
                           if (value === 'plot') {
@@ -510,6 +570,7 @@ export default function AssignCameraPage() {
                             setSelectedLand(lands[0]?.id || '');
                           }
                         }}
+                        disabled={!!editingAssignment}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder='Select type' />
@@ -520,18 +581,19 @@ export default function AssignCameraPage() {
                         </SelectContent>
                       </Select>
                     </div>
-
                     <div className='space-y-2'>
                       <Label>Select {selectedPlot ? 'Plot' : 'Land'}</Label>
                       <Select
                         value={selectedPlot || selectedLand}
                         onValueChange={(value) => {
+                          if (editingAssignment) return;
                           if (selectedPlot) {
                             setSelectedPlot(value);
                           } else {
                             setSelectedLand(value);
                           }
                         }}
+                        disabled={!!editingAssignment}
                       >
                         <SelectTrigger>
                           <SelectValue
@@ -554,33 +616,72 @@ export default function AssignCameraPage() {
                         </SelectContent>
                       </Select>
                     </div>
-
-                    <div className='space-y-2'>
-                      <Label>IP Address</Label>
-                      <Input
-                        placeholder='e.g., http://192.168.1.100:8080/video'
-                        value={ipAddress}
-                        onChange={(e) => setIpAddress(e.target.value)}
-                      />
-                    </div>
-
-                    <div className='space-y-2'>
-                      <Label>Label (Optional)</Label>
-                      <Input
-                        placeholder='e.g., Front Gate Camera'
-                        value={label}
-                        onChange={(e) => setLabel(e.target.value)}
-                      />
-                    </div>
-
+                    {cameraInputs.map((cam, idx) => (
+                      <div className='flex items-end gap-4' key={idx}>
+                        <div className='flex-1'>
+                          <Label>IP Address</Label>
+                          <Input
+                            placeholder='e.g., http://192.168.1.100:8080/video'
+                            value={cam.ipAddress}
+                            onChange={(e) => {
+                              const newInputs = [...cameraInputs];
+                              newInputs[idx].ipAddress = e.target.value;
+                              setCameraInputs(newInputs);
+                            }}
+                          />
+                        </div>
+                        <div className='flex-1'>
+                          <Label>Label (Optional)</Label>
+                          <Input
+                            placeholder='e.g., Entrance'
+                            value={cam.label}
+                            onChange={(e) => {
+                              const newInputs = [...cameraInputs];
+                              newInputs[idx].label = e.target.value;
+                              setCameraInputs(newInputs);
+                            }}
+                          />
+                        </div>
+                        {!editingAssignment && (
+                          <Button
+                            type='button'
+                            variant='ghost'
+                            size='icon'
+                            onClick={() =>
+                              setCameraInputs(
+                                cameraInputs.filter((_, i) => i !== idx)
+                              )
+                            }
+                            disabled={cameraInputs.length === 1}
+                          >
+                            <Trash2 className='h-4 w-4' />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    {!editingAssignment && (
+                      <Button
+                        type='button'
+                        variant='outline'
+                        className='mt-2 w-full'
+                        onClick={() =>
+                          setCameraInputs([
+                            ...cameraInputs,
+                            { ipAddress: '', label: '' }
+                          ])
+                        }
+                      >
+                        + Add Camera
+                      </Button>
+                    )}
                     <Button
                       onClick={handleAssign}
                       disabled={
                         loading ||
                         (!selectedPlot && !selectedLand) ||
-                        !ipAddress
+                        cameraInputs.some((cam) => !cam.ipAddress)
                       }
-                      className='w-full'
+                      className='mt-4 w-full'
                     >
                       {loading ? (
                         <>
@@ -592,7 +693,7 @@ export default function AssignCameraPage() {
                           <Camera className='mr-2 h-4 w-4' />
                           {editingAssignment
                             ? 'Update Camera'
-                            : 'Assign Camera'}
+                            : 'Assign Camera(s)'}
                         </>
                       )}
                     </Button>

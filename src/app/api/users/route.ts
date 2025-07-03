@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
               title: true,
               location: true,
               status: true,
-              camera: true,
+              cameras: true,
               project: {
                 select: {
                   name: true,
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
               number: true,
               size: true,
               status: true,
-              camera: true,
+              cameras: true,
               plot: {
                 select: {
                   title: true,

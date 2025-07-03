@@ -1,8 +1,10 @@
 import {
   IconAlertTriangle,
   IconArrowRight,
+  IconBellCheck,
   IconBrandGithub,
   IconBrandTwitter,
+  IconCamera,
   IconCheck,
   IconChevronLeft,
   IconChevronRight,
@@ -36,8 +38,7 @@ import {
   IconUsers,
   IconUsersGroup,
   IconUserX,
-  IconX,
-  IconBellCheck
+  IconX
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -47,7 +48,7 @@ export const Icons = {
   logo: IconCommand,
   login: IconLogin,
   close: IconX,
-  bell:IconBellCheck,
+  bell: IconBellCheck,
   product: IconShoppingBag,
   spinner: IconLoader2,
   kanban: IconLayoutKanban,
@@ -81,5 +82,6 @@ export const Icons = {
   account: IconUserCog,
   manager: IconUserCog,
   feedback: IconMessageCircle,
-  allUsers: IconUsersGroup
+  allUsers: IconUsersGroup,
+  camera: IconCamera
 };

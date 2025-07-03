@@ -3,11 +3,11 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const { plotId, ipAddress, label } = await req.json();
+    const { plotId, cameras } = await req.json();
 
-    if (!plotId || !ipAddress) {
+    if (!plotId || !Array.isArray(cameras) || cameras.length === 0) {
       return NextResponse.json(
-        { message: 'Plot ID and IP Address are required' },
+        { message: 'Plot ID and at least one camera are required' },
         { status: 400 }
       );
     }
@@ -29,23 +29,66 @@ export async function POST(req: Request) {
       );
     }
 
-    // Create or update camera
-    const camera = await prisma.camera.upsert({
-      where: { plotId },
-      update: {
-        ipAddress,
-        label: label || null
-      },
-      create: {
-        plotId,
-        ipAddress,
-        label: label || null
-      }
-    });
+    // Create multiple cameras
+    const createdCameras = await prisma.$transaction(
+      cameras.map((cam: { ipAddress: string; label?: string }) =>
+        prisma.camera.create({
+          data: {
+            plotId,
+            ipAddress: cam.ipAddress,
+            label: cam.label || null
+          }
+        })
+      )
+    );
 
-    return NextResponse.json(camera);
+    return NextResponse.json(createdCameras);
   } catch (error) {
-    console.error('Error assigning camera:', error);
+    console.error('Error assigning cameras:', error);
+    return NextResponse.json(
+      { message: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    if (!id) {
+      return NextResponse.json(
+        { message: 'Camera ID is required' },
+        { status: 400 }
+      );
+    }
+    await prisma.camera.delete({ where: { id } });
+    return NextResponse.json({ message: 'Camera deleted' });
+  } catch (error) {
+    console.error('Error deleting camera:', error);
+    return NextResponse.json(
+      { message: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(req: Request) {
+  try {
+    const { id, ipAddress, label } = await req.json();
+    if (!id || !ipAddress) {
+      return NextResponse.json(
+        { message: 'Camera ID and IP Address are required' },
+        { status: 400 }
+      );
+    }
+    const updated = await prisma.camera.update({
+      where: { id },
+      data: { ipAddress, label: label || null }
+    });
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error('Error updating camera:', error);
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
