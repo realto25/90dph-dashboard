@@ -115,8 +115,7 @@ export default function VisitRequestsPage() {
 
   const handleApprove = async (requestId: string) => {
     try {
-      const response = await axios.patch(`/api/visit-requests`, {
-        id: requestId,
+      const response = await axios.patch(`/api/visit-requests/${requestId}`, {
         status: 'APPROVED'
       });
       setRequests((prev) =>
@@ -131,8 +130,7 @@ export default function VisitRequestsPage() {
 
   const handleReject = async (requestId: string) => {
     try {
-      const response = await axios.patch(`/api/visit-requests`, {
-        id: requestId,
+      const response = await axios.patch(`/api/visit-requests/${requestId}`, {
         status: 'REJECTED'
       });
       setRequests((prev) =>
@@ -147,8 +145,7 @@ export default function VisitRequestsPage() {
 
   const handleAssignManager = async (requestId: string, managerId: string) => {
     try {
-      const response = await axios.patch(`/api/visit-requests`, {
-        id: requestId,
+      const response = await axios.patch(`/api/visit-requests/${requestId}`, {
         managerId
       });
       setRequests((prev) =>

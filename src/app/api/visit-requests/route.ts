@@ -64,21 +64,9 @@ export async function GET(request: NextRequest) {
     const transformedData = await Promise.all(
       visitRequests.map(async (request) => {
         let qrCode = null;
-        if (request.status === 'APPROVED' && request.qrCode) {
-          qrCode = request.qrCode;
-        } else if (request.status === 'APPROVED') {
-          const qrData = JSON.stringify({
-            id: request.id,
-            name: request.name,
-            email: request.email,
-            phone: request.phone,
-            date: request.date.toISOString(),
-            time: request.time,
-            plotId: request.plotId,
-            plotTitle: request.plot.title,
-            projectName: request.plot.project.name
-          });
-          qrCode = await QRCode.toDataURL(qrData);
+        if (request.status === 'APPROVED') {
+          // Always generate QR code with only the id as a string
+          qrCode = await QRCode.toDataURL(request.id);
         }
 
         return {

@@ -132,10 +132,8 @@ export async function PATCH(
     // Generate QR code if approved
     let qrCode = null;
     if (status === 'APPROVED') {
-      // Generate QR code with only the id as a string
-      qrCode =
-        visitRequest.qrCode ||
-        (await import('qrcode')).default.toDataURL(visitRequest.id);
+      // Always generate QR code with only the id as a string
+      qrCode = (await import('qrcode')).default.toDataURL(visitRequest.id);
     }
 
     const response = {
