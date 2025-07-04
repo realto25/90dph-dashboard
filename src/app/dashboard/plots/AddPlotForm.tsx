@@ -44,7 +44,6 @@ const formSchema = z.object({
   longitude: z.string().min(1, { message: 'Longitude is required.' }),
   facing: z.string().min(1, { message: 'Facing is required.' }),
   mapEmbedUrl: z.string().min(1, { message: 'Map embed URL is required.' }),
-  qrUrl: z.string().optional(),
   description: z.string().min(5, { message: 'Description is required.' })
 });
 
@@ -76,7 +75,6 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
       longitude: '',
       facing: '',
       mapEmbedUrl: '',
-      qrUrl: '',
       description: ''
     }
   });
@@ -144,6 +142,11 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
         (amenity) => amenity.trim() !== ''
       );
 
+      // Generate QR code with plot name and location
+      const QRCode = (await import('qrcode')).default;
+      const qrString = `${values.title} - ${values.location}`;
+      const qrUrl = await QRCode.toDataURL(qrString);
+
       const response = await fetch('/api/plots', {
         method: 'POST',
         headers: {
@@ -157,7 +160,8 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
           latitude,
           longitude,
           totalArea,
-          projectId
+          projectId,
+          qrUrl // include generated QR code data URL
         })
       });
 
@@ -421,20 +425,6 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
                         />
                       </div>
                     )}
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name='qrUrl'
-                render={({ field }) => (
-                  <FormItem className='md:col-span-2'>
-                    <FormLabel>QR Code URL</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder='Enter QR code URL' />
-                    </FormControl>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
