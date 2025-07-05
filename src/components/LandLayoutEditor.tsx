@@ -4,6 +4,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle
+} from '@/components/ui/drawer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -76,6 +84,7 @@ export default function LandLayoutEditor({
     text: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [landLayoutPlotId, setLandLayoutPlotId] = useState<string | null>(null);
 
   const fetchLands = async () => {
     setLoading(true);
@@ -229,30 +238,30 @@ export default function LandLayoutEditor({
   };
 
   return (
-    <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
-      <div className='container mx-auto space-y-6 p-6'>
+    <div className='flex w-full justify-center'>
+      <div className='container space-y-6 p-6 md:max-w-5xl'>
         {/* Header */}
-        <div className='flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between'>
+        <div className='flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between'>
           <div className='space-y-1'>
-            <h1 className='text-3xl font-bold tracking-tight'>
+            <h2 className='text-xl font-semibold tracking-tight'>
               Land Management
-            </h1>
-            <p className='text-muted-foreground'>
+            </h2>
+            <p className='text-muted-foreground text-sm'>
               Manage lands for plot {plotId}
             </p>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className='grid gap-6'>
+        <div className='grid flex-1 gap-4 overflow-hidden'>
           {/* Image Upload Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Plot Image</CardTitle>
+          <Card className='flex-shrink-0'>
+            <CardHeader className='pb-3'>
+              <CardTitle className='text-lg'>Plot Image</CardTitle>
             </CardHeader>
             <CardContent>
               {formData.imageUrl ? (
-                <div className='relative aspect-video w-full max-w-2xl overflow-hidden rounded-lg'>
+                <div className='relative aspect-video w-full max-w-md overflow-hidden rounded-lg'>
                   <Image
                     src={formData.imageUrl}
                     alt='Plot preview'
@@ -281,34 +290,36 @@ export default function LandLayoutEditor({
                   onUploadError={(error: Error) => {
                     toast.error(`Error uploading image: ${error.message}`);
                   }}
-                  className='ut-label:text-lg ut-allowed-content:ut-uploading:text-red-300'
+                  className='ut-label:text-sm ut-allowed-content:ut-uploading:text-red-300'
                 />
               )}
             </CardContent>
           </Card>
 
           {/* Form Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className='flex items-center gap-2'>
+          <Card className='flex-shrink-0'>
+            <CardHeader className='pb-3'>
+              <CardTitle className='flex items-center gap-2 text-lg'>
                 {editingLand ? (
                   <>
-                    <Edit className='h-5 w-5' />
+                    <Edit className='h-4 w-4' />
                     Edit Land Details
                   </>
                 ) : (
                   <>
-                    <Plus className='h-5 w-5' />
+                    <Plus className='h-4 w-4' />
                     Add New Land
                   </>
                 )}
               </CardTitle>
             </CardHeader>
-            <CardContent className='space-y-4'>
-              <div className='grid gap-4'>
-                <div className='grid grid-cols-2 gap-4'>
-                  <div className='space-y-2'>
-                    <Label htmlFor='number'>Land Number</Label>
+            <CardContent className='space-y-3'>
+              <div className='grid gap-3'>
+                <div className='grid grid-cols-2 gap-3'>
+                  <div className='space-y-1'>
+                    <Label htmlFor='number' className='text-sm'>
+                      Land Number
+                    </Label>
                     <Input
                       id='number'
                       value={formData.number}
@@ -316,11 +327,14 @@ export default function LandLayoutEditor({
                         setFormData({ ...formData, number: e.target.value })
                       }
                       placeholder='e.g., L001'
+                      className='h-9'
                     />
                   </div>
 
-                  <div className='space-y-2'>
-                    <Label htmlFor='size'>Land Size</Label>
+                  <div className='space-y-1'>
+                    <Label htmlFor='size' className='text-sm'>
+                      Land Size
+                    </Label>
                     <Input
                       id='size'
                       value={formData.size}
@@ -328,11 +342,14 @@ export default function LandLayoutEditor({
                         setFormData({ ...formData, size: e.target.value })
                       }
                       placeholder='e.g., 1000 sq ft'
+                      className='h-9'
                     />
                   </div>
 
-                  <div className='space-y-2'>
-                    <Label htmlFor='price'>Price (₹)</Label>
+                  <div className='space-y-1'>
+                    <Label htmlFor='price' className='text-sm'>
+                      Price (₹)
+                    </Label>
                     <Input
                       id='price'
                       type='number'
@@ -341,11 +358,14 @@ export default function LandLayoutEditor({
                         setFormData({ ...formData, price: e.target.value })
                       }
                       placeholder='e.g., 50000'
+                      className='h-9'
                     />
                   </div>
 
-                  <div className='space-y-2'>
-                    <Label htmlFor='status'>Status</Label>
+                  <div className='space-y-1'>
+                    <Label htmlFor='status' className='text-sm'>
+                      Status
+                    </Label>
                     <Select
                       value={formData.status}
                       onValueChange={(value) =>
@@ -355,7 +375,7 @@ export default function LandLayoutEditor({
                         })
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className='h-9'>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -367,11 +387,12 @@ export default function LandLayoutEditor({
                   </div>
                 </div>
 
-                <div className='flex gap-2 pt-4'>
+                <div className='flex gap-2 pt-2'>
                   <Button
                     onClick={handleSubmit}
                     className='flex-1'
                     disabled={loading}
+                    size='sm'
                   >
                     {loading ? (
                       <>
@@ -396,6 +417,7 @@ export default function LandLayoutEditor({
                       variant='outline'
                       onClick={resetForm}
                       disabled={loading}
+                      size='sm'
                     >
                       Cancel
                     </Button>
@@ -406,48 +428,51 @@ export default function LandLayoutEditor({
           </Card>
 
           {/* Lands Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle className='flex items-center justify-between'>
+          <Card className='min-h-0 flex-1'>
+            <CardHeader className='pb-3'>
+              <CardTitle className='flex items-center justify-between text-lg'>
                 <span>Land Records ({lands.length})</span>
                 <div className='flex gap-2'>
-                  <Badge variant='outline' className='text-green-600'>
+                  <Badge variant='outline' className='text-xs text-green-600'>
                     {lands.filter((l) => l.status === 'AVAILABLE').length}{' '}
                     Available
                   </Badge>
-                  <Badge variant='outline' className='text-red-600'>
+                  <Badge variant='outline' className='text-xs text-red-600'>
                     {lands.filter((l) => l.status === 'SOLD').length} Sold
                   </Badge>
-                  <Badge variant='outline' className='text-yellow-600'>
+                  <Badge variant='outline' className='text-xs text-yellow-600'>
                     {lands.filter((l) => l.status === 'ADVANCE').length} Advance
                   </Badge>
                 </div>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <ScrollArea className='h-[400px]'>
+            <CardContent className='h-full p-0'>
+              <ScrollArea className='h-full'>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Land #</TableHead>
-                      <TableHead>Size</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className='text-sm'>Land #</TableHead>
+                      <TableHead className='text-sm'>Size</TableHead>
+                      <TableHead className='text-sm'>Price</TableHead>
+                      <TableHead className='text-sm'>Status</TableHead>
+                      <TableHead className='text-sm'>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {lands.map((land) => (
                       <TableRow key={land.id}>
-                        <TableCell className='font-medium'>
+                        <TableCell className='text-sm font-medium'>
                           {land.number}
                         </TableCell>
-                        <TableCell>{land.size}</TableCell>
-                        <TableCell>₹{land.price.toLocaleString()}</TableCell>
+                        <TableCell className='text-sm'>{land.size}</TableCell>
+                        <TableCell className='text-sm'>
+                          ₹{land.price.toLocaleString()}
+                        </TableCell>
                         <TableCell>
                           <Badge
                             variant='outline'
                             className={cn(
+                              'text-xs',
                               land.status === 'AVAILABLE' &&
                                 'border-green-200 bg-green-50 text-green-700',
                               land.status === 'SOLD' &&
@@ -460,21 +485,22 @@ export default function LandLayoutEditor({
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <div className='flex gap-2'>
+                          <div className='flex gap-1'>
                             <Button
                               variant='ghost'
                               size='icon'
+                              className='h-7 w-7'
                               onClick={() => handleEdit(land)}
                             >
-                              <Edit className='h-4 w-4' />
+                              <Edit className='h-3 w-3' />
                             </Button>
                             <Button
                               variant='ghost'
                               size='icon'
-                              className='text-red-600 hover:text-red-700'
+                              className='h-7 w-7 text-red-600 hover:text-red-700'
                               onClick={() => handleDelete(land.id!)}
                             >
-                              <Trash2 className='h-4 w-4' />
+                              <Trash2 className='h-3 w-3' />
                             </Button>
                           </div>
                         </TableCell>
@@ -484,7 +510,7 @@ export default function LandLayoutEditor({
                       <TableRow>
                         <TableCell
                           colSpan={5}
-                          className='text-muted-foreground py-8 text-center'
+                          className='text-muted-foreground py-8 text-center text-sm'
                         >
                           No land records found. Add your first land using the
                           form above.
@@ -522,6 +548,29 @@ export default function LandLayoutEditor({
             </Button>
           </Alert>
         </div>
+      )}
+
+      {landLayoutPlotId && (
+        <Drawer open={true} onOpenChange={() => setLandLayoutPlotId(null)}>
+          <DrawerContent className='bg-background fixed inset-0 z-50 flex h-screen w-screen flex-col p-0'>
+            <DrawerHeader className='shrink-0 border-b p-6 pb-4'>
+              <DrawerTitle className='text-xl font-semibold'>
+                Manage Lands for Plot
+              </DrawerTitle>
+            </DrawerHeader>
+            <div className='min-h-0 flex-1 overflow-y-auto p-4'>
+              <div style={{ minHeight: 1200 }}>
+                {/* Replace this with your LandLayoutEditor */}
+                <LandLayoutEditor plotId={landLayoutPlotId} />
+              </div>
+            </div>
+            <DrawerFooter className='shrink-0'>
+              <DrawerClose asChild>
+                <Button variant='outline'>Close</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
       )}
     </div>
   );

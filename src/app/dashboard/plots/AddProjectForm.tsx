@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Building2, FileText, MapPin, RefreshCw } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -34,14 +34,29 @@ const formSchema = z.object({
 
 type ProjectFormValues = z.infer<typeof formSchema>;
 
+interface Project {
+  id: string;
+  name: string;
+  location: string;
+  description: string;
+  imageUrl: string;
+  plots: any[];
+  createdAt: string;
+}
+
 export default function AddProjectForm({
-  onSuccess
+  onSuccess,
+  project,
+  onCancel
 }: {
   onSuccess: () => void;
+  project?: Project | null;
+  onCancel?: () => void;
 }) {
   const [loading, setLoading] = useState(false);
   const { theme } = useTheme();
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
+  const isEditMode = !!project;
 
   const form = useForm<ProjectFormValues>({
     resolver: zodResolver(formSchema),
@@ -52,6 +67,19 @@ export default function AddProjectForm({
       description: ''
     }
   });
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (project) {
+      form.reset({
+        name: project.name,
+        location: project.location,
+        description: project.description,
+        imageUrl: project.imageUrl
+      });
+      setUploadedImageUrl(project.imageUrl);
+    }
+  }, [project, form]);
 
   const getThemeStyles = () => {
     const baseStyles = {
@@ -101,8 +129,11 @@ export default function AddProjectForm({
 
     setLoading(true);
     try {
-      const response = await fetch('/api/projects', {
-        method: 'POST',
+      const url = isEditMode ? `/api/projects/${project.id}` : '/api/projects';
+      const method = isEditMode ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json'
         },
@@ -113,15 +144,21 @@ export default function AddProjectForm({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create project');
+        throw new Error(
+          `Failed to ${isEditMode ? 'update' : 'create'} project`
+        );
       }
 
-      toast.success('Project created successfully!');
+      toast.success(
+        `Project ${isEditMode ? 'updated' : 'created'} successfully!`
+      );
       form.reset();
       setUploadedImageUrl('');
       onSuccess();
     } catch (error) {
-      toast.error('Failed to create project. Please try again.');
+      toast.error(
+        `Failed to ${isEditMode ? 'update' : 'create'} project. Please try again.`
+      );
     } finally {
       setLoading(false);
     }
@@ -134,7 +171,7 @@ export default function AddProjectForm({
       >
         <CardTitle className='flex items-center gap-2 text-xl font-semibold'>
           <Building2 className='h-5 w-5 text-blue-600 dark:text-blue-400' />
-          Add New Project
+          {isEditMode ? 'Edit Project' : 'Add New Project'}
         </CardTitle>
       </CardHeader>
       <CardContent className='p-6'>
@@ -253,26 +290,39 @@ export default function AddProjectForm({
               />
             </div>
 
-            <Button
-              type='submit'
-              disabled={loading}
-              className={cn(
-                styles.button.primary,
-                'w-full gap-2 transition-colors duration-200'
+            <div className='flex gap-3'>
+              <Button
+                type='submit'
+                disabled={loading}
+                className={cn(
+                  styles.button.primary,
+                  'flex-1 gap-2 transition-colors duration-200'
+                )}
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className='h-4 w-4 animate-spin' />
+                    {isEditMode ? 'Updating Project...' : 'Creating Project...'}
+                  </>
+                ) : (
+                  <>
+                    <Building2 className='h-4 w-4' />
+                    {isEditMode ? 'Update Project' : 'Create Project'}
+                  </>
+                )}
+              </Button>
+
+              {onCancel && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={onCancel}
+                  className='flex-1'
+                >
+                  Cancel
+                </Button>
               )}
-            >
-              {loading ? (
-                <>
-                  <RefreshCw className='h-4 w-4 animate-spin' />
-                  Creating Project...
-                </>
-              ) : (
-                <>
-                  <Building2 className='h-4 w-4' />
-                  Create Project
-                </>
-              )}
-            </Button>
+            </div>
           </form>
         </Form>
       </CardContent>

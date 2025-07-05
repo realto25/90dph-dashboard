@@ -1,6 +1,10 @@
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
 // GET - Fetch visit requests by clerkId (user or assigned manager)
 export async function GET(request: NextRequest) {
   try {
@@ -64,10 +68,7 @@ export async function GET(request: NextRequest) {
 }
 
 // PATCH - Update visit request status (approve/reject) and assign manager by id
-export async function PATCH(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
     const { id } = await context.params;
     const body = await request.json();

@@ -4,12 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -18,6 +12,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle
+} from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -50,6 +50,14 @@ import { useThemeConfig } from '@/components/active-theme';
 // import AssignCameraDialog from '@/components/AssignCameraDialog';
 import AssignLandDialog from '@/components/AssignLandDialog';
 import LandLayoutEditor from '@/components/LandLayoutEditor';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle
+} from '@/components/ui/drawer';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -58,14 +66,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger
-} from '@/components/ui/sheet';
+import { SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import {
   BarChart3,
@@ -155,12 +156,11 @@ const PlotList = ({ projectId }: PlotListProps) => {
         SOLD: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
       },
       price: 'text-green-600 dark:text-green-400',
-      overlay: 'bg-black/60 dark:bg-black/80',
       actionButton: {
-        edit: 'bg-background hover:bg-accent text-accent-foreground',
-        view: 'bg-background hover:bg-accent text-accent-foreground',
+        edit: 'hover:bg-accent text-accent-foreground',
+        view: 'hover:bg-accent text-accent-foreground',
         delete:
-          'bg-destructive hover:bg-destructive/90 text-destructive-foreground'
+          'hover:bg-destructive/90 text-destructive-foreground border-destructive/50 hover:border-destructive'
       }
     };
 
@@ -170,7 +170,6 @@ const PlotList = ({ projectId }: PlotListProps) => {
         cardHover: baseStyles.cardHover,
         statusBadge: baseStyles.statusBadge,
         price: baseStyles.price,
-        overlay: baseStyles.overlay,
         actionButton: baseStyles.actionButton
       },
       blue: {
@@ -184,12 +183,11 @@ const PlotList = ({ projectId }: PlotListProps) => {
           SOLD: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
         },
         price: 'text-blue-600 dark:text-blue-400',
-        overlay: 'bg-blue-900/60 dark:bg-blue-900/80',
         actionButton: {
-          edit: 'bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-400',
-          view: 'bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-400',
+          edit: 'hover:bg-blue-100 text-blue-800 dark:hover:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800',
+          view: 'hover:bg-blue-100 text-blue-800 dark:hover:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800',
           delete:
-            'bg-red-100 hover:bg-red-200 text-red-800 dark:bg-red-900/20 dark:hover:bg-red-900/30 dark:text-red-400'
+            'hover:bg-red-100 text-red-800 dark:hover:bg-red-900/20 dark:text-red-400 border-red-200 dark:border-red-800'
         }
       },
       green: {
@@ -203,12 +201,11 @@ const PlotList = ({ projectId }: PlotListProps) => {
           SOLD: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
         },
         price: 'text-green-600 dark:text-green-400',
-        overlay: 'bg-green-900/60 dark:bg-green-900/80',
         actionButton: {
-          edit: 'bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900/20 dark:hover:bg-green-900/30 dark:text-green-400',
-          view: 'bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900/20 dark:hover:bg-green-900/30 dark:text-green-400',
+          edit: 'hover:bg-green-100 text-green-800 dark:hover:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-800',
+          view: 'hover:bg-green-100 text-green-800 dark:hover:bg-green-900/20 dark:text-green-400 border-green-200 dark:border-green-800',
           delete:
-            'bg-red-100 hover:bg-red-200 text-red-800 dark:bg-red-900/20 dark:hover:bg-red-900/30 dark:text-red-400'
+            'hover:bg-red-100 text-red-800 dark:hover:bg-red-900/20 dark:text-red-400 border-red-200 dark:border-red-800'
         }
       },
       amber: {
@@ -222,12 +219,11 @@ const PlotList = ({ projectId }: PlotListProps) => {
           SOLD: 'bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400'
         },
         price: 'text-amber-600 dark:text-amber-400',
-        overlay: 'bg-amber-900/60 dark:bg-amber-900/80',
         actionButton: {
-          edit: 'bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/20 dark:hover:bg-amber-900/30 dark:text-amber-400',
-          view: 'bg-amber-100 hover:bg-amber-200 text-amber-800 dark:bg-amber-900/20 dark:hover:bg-amber-900/30 dark:text-amber-400',
+          edit: 'hover:bg-amber-100 text-amber-800 dark:hover:bg-amber-900/20 dark:text-amber-400 border-amber-200 dark:border-amber-800',
+          view: 'hover:bg-amber-100 text-amber-800 dark:hover:bg-amber-900/20 dark:text-green-400 border-amber-200 dark:border-amber-800',
           delete:
-            'bg-red-100 hover:bg-red-200 text-red-800 dark:bg-red-900/20 dark:hover:bg-red-900/30 dark:text-red-400'
+            'hover:bg-red-100 text-red-800 dark:hover:bg-red-900/20 dark:text-red-400 border-red-200 dark:border-red-800'
         }
       }
     };
@@ -483,60 +479,6 @@ const PlotList = ({ projectId }: PlotListProps) => {
                       {plot.status}
                     </Badge>
                   </div>
-
-                  <div
-                    className={cn(
-                      styles.overlay,
-                      'absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100'
-                    )}
-                  >
-                    <div className='flex h-full items-center justify-center gap-2'>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              className={styles.actionButton.edit}
-                              size='icon'
-                              onClick={() => setEditingPlotId(plot.id)}
-                            >
-                              <Edit className='h-4 w-4' />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Edit Plot</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              className={styles.actionButton.view}
-                              size='icon'
-                              onClick={() => setLandLayoutPlotId(plot.id)}
-                            >
-                              <View className='h-4 w-4' />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>View Layout</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              className={styles.actionButton.delete}
-                              size='icon'
-                              onClick={() => handleDelete(plot.id)}
-                            >
-                              <Trash2 className='h-4 w-4' />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Delete Plot</TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
-                  </div>
                 </div>
 
                 <CardContent className='flex flex-col gap-2 p-4'>
@@ -567,6 +509,59 @@ const PlotList = ({ projectId }: PlotListProps) => {
                   <div className='mt-4'>
                     <AssignLandDialog plotId={plot.id} />
                     {/* <AssignCameraDialog plotId={plot.id} /> */}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className='mt-4 flex items-center justify-between gap-2 border-t pt-2'>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            className={styles.actionButton.edit}
+                            size='sm'
+                            variant='outline'
+                            onClick={() => setEditingPlotId(plot.id)}
+                          >
+                            <Edit className='mr-1 h-3 w-3' />
+                            Edit
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Edit Plot</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            className={styles.actionButton.view}
+                            size='sm'
+                            variant='outline'
+                            onClick={() => setLandLayoutPlotId(plot.id)}
+                          >
+                            <View className='mr-1 h-3 w-3' />
+                            Lands
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Add Lands</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            className={styles.actionButton.delete}
+                            size='sm'
+                            variant='outline'
+                            onClick={() => handleDelete(plot.id)}
+                          >
+                            <Trash2 className='mr-1 h-3 w-3' />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Delete Plot</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </CardContent>
               </Card>
@@ -658,14 +653,23 @@ const PlotList = ({ projectId }: PlotListProps) => {
       )}
 
       {landLayoutPlotId && !editingPlotId && (
-        <Dialog open={true} onOpenChange={() => setLandLayoutPlotId(null)}>
-          <DialogContent className='h-screen w-full overflow-auto'>
-            <DialogHeader>
-              <DialogTitle>Manage Lands for Plot</DialogTitle>
-            </DialogHeader>
-            <LandLayoutEditor plotId={landLayoutPlotId} />
-          </DialogContent>
-        </Dialog>
+        <Drawer open={true} onOpenChange={() => setLandLayoutPlotId(null)}>
+          <DrawerContent className='bg-background fixed inset-0 z-50 flex h-screen w-screen flex-col p-0'>
+            <DrawerHeader className='shrink-0 border-b p-6 pb-4'>
+              <DrawerTitle className='text-xl font-semibold'>
+                Manage Lands for Plot
+              </DrawerTitle>
+            </DrawerHeader>
+            <div className='min-h-0 flex-1 overflow-y-auto p-4'>
+              <LandLayoutEditor plotId={landLayoutPlotId} />
+            </div>
+            <DrawerFooter className='shrink-0'>
+              <DrawerClose asChild>
+                <Button variant='outline'>Close</Button>
+              </DrawerClose>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
       )}
     </div>
   );

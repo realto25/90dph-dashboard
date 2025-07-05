@@ -16,7 +16,7 @@ import {
 const DEFAULT_THEMES = [
   {
     name: 'Default',
-    value: 'default'
+    value: 'amber'
   },
   {
     name: 'Blue',

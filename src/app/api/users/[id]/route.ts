@@ -2,11 +2,12 @@ import { prisma } from '@/lib/prisma';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
 // Define the route handler
-export async function GET(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
     // Await the params since they are wrapped in a Promise in Next.js App Router
     const { id } = await context.params;

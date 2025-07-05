@@ -87,6 +87,12 @@ export const navItems: NavItem[] = [
         url: '/dashboard/assign-camera',
         icon: 'userPen',
         shortcut: ['C', 'c']
+      },
+      {
+        title: 'Assigned Lands',
+        url: '/dashboard/owned-lands',
+        icon: 'plots',
+        shortcut: ['L', 'l']
       }
       // {
       //   title: 'Login',
