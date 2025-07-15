@@ -150,6 +150,14 @@ export const navItems: NavItem[] = [
       }
     ]
   },
+   {
+    title: 'All Users',
+    url: '/dashboard/all-users',
+    icon: 'allUsers',
+    shortcut: ['U', 'u'],
+    isActive: false,
+    items: [] // No child items
+  },
   {
     title: 'Feedback',
     url: '/dashboard/feedback',
@@ -166,10 +174,10 @@ export const navItems: NavItem[] = [
     isActive: false,
     items: [] // No child items
   },
-
-  {
-    title: 'All Users',
-    url: '/dashboard/all-users',
+ 
+   {
+    title: 'Admins',
+    url: '/dashboard/admins',
     icon: 'allUsers',
     shortcut: ['U', 'u'],
     isActive: false,
