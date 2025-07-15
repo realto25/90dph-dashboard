@@ -54,6 +54,12 @@ export function PieGraph() {
       // Example: Fetch visit requests and group by user role (replace with your real API logic)
       const res = await fetch('/api/visit-requests');
       const data = await res.json();
+      if (!Array.isArray(data)) {
+        setChartData([]);
+        setTotalVisitors(0);
+        // Optionally log or handle error
+        return;
+      }
       // Example transformation: group by user role
       const grouped: Record<string, { visitors: number; fill: string }> = {};
       data.forEach((item: any) => {
@@ -92,10 +98,10 @@ export function PieGraph() {
           <span className='@[540px]/card:hidden'>User role distribution</span>
         </CardDescription>
       </CardHeader>
-      <CardContent className='px-2 pt-4 sm:px-6 sm:pt-6'>
+      <CardContent className='flex h-[250px] items-center justify-center'>
         <ChartContainer
           config={chartConfig}
-          className='mx-auto aspect-square h-[250px]'
+          className='mx-auto h-[250px] w-full max-w-[300px]'
         >
           <PieChart>
             <defs>

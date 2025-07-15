@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
+import QRCode from 'qrcode';
 import { z } from 'zod';
 
 // Validation schema for plot creation
@@ -18,7 +19,6 @@ const plotSchema = z.object({
   description: z.string().min(1, 'Description is required'),
   projectId: z.string().min(1, 'Project ID is required'),
   mapEmbedUrl: z.string().optional(),
-  qrUrl: z.string().optional(),
   totalArea: z.number()
 });
 
@@ -77,11 +77,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
+    // Create the plot without qrData
     const plot = await prisma.plot.create({
       data: validatedData
     });
 
-    return NextResponse.json(plot);
+    // Generate QR code as a PNG data URL from the plot's id
+    const qrUrl = await QRCode.toDataURL(plot.id);
+    const updatedPlot = await prisma.plot.update({
+      where: { id: plot.id },
+      data: { qrUrl }
+    });
+
+    return NextResponse.json(updatedPlot);
   } catch (error) {
     console.error('Error creating plot:', error);
 

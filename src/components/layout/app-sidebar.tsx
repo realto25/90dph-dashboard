@@ -34,10 +34,8 @@ import { useMediaQuery } from '@/hooks/use-media-query';
 import { useAuth } from '@/lib/auth';
 import { SignOutButton, useUser } from '@clerk/nextjs';
 import {
-  IconBell,
   IconChevronRight,
   IconChevronsDown,
-  IconCreditCard,
   IconLogout,
   IconUserCircle
 } from '@tabler/icons-react';
@@ -124,7 +122,7 @@ export default function AppSidebar() {
           onTenantSwitch={handleSwitchTenant}
         />
       </SidebarHeader>
-      <SidebarContent className='overflow-x-hidden'>
+      <SidebarContent className='scrollbar-hide overflow-y-auto'>
         <SidebarGroup>
           <SidebarGroupLabel>Overview</SidebarGroupLabel>
           <SidebarMenu>
@@ -251,14 +249,14 @@ export default function AppSidebar() {
                     <IconUserCircle className='mr-2 h-4 w-4' />
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  {/* <DropdownMenuItem>
                     <IconCreditCard className='mr-2 h-4 w-4' />
                     Billing
                   </DropdownMenuItem>
                   <DropdownMenuItem>
                     <IconBell className='mr-2 h-4 w-4' />
                     Notifications
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>

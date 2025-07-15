@@ -65,8 +65,16 @@ export async function GET(request: NextRequest) {
       visitRequests.map(async (request) => {
         let qrCode = null;
         if (request.status === 'APPROVED') {
-          // Always generate QR code with only the id as a string
-          qrCode = await QRCode.toDataURL(request.id);
+          // Generate QR code as SVG with minimal options for smallest base64
+          const svgString = await QRCode.toString(request.id, {
+            type: 'svg',
+            errorCorrectionLevel: 'L',
+            margin: 0,
+            width: 100
+          });
+          // Convert SVG string to base64 and use data URI
+          const base64Svg = Buffer.from(svgString).toString('base64');
+          qrCode = `data:image/svg+xml;base64,${base64Svg}`;
         }
 
         return {

@@ -21,7 +21,7 @@ export default async function DashboardLayout({
   return (
     <KBar>
       <SidebarProvider defaultOpen={defaultOpen}>
-        <AppSidebar />
+        <AppSidebar  />
         <SidebarInset>
           <Header />
           {/* page main content */}

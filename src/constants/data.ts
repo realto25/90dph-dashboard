@@ -179,7 +179,7 @@ export const navItems: NavItem[] = [
     title: 'Admins',
     url: '/dashboard/admins',
     icon: 'allUsers',
-    shortcut: ['U', 'u'],
+    shortcut: ['A', 'a'],
     isActive: false,
     items: [] // No child items
   },

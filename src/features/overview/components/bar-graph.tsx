@@ -54,19 +54,14 @@ export function BarGraph() {
   }
 
   return (
-    <Card className='@container/card !pt-3'>
-      <CardHeader className='flex flex-col items-stretch space-y-0 border-b !p-0 sm:flex-row'>
-        <div className='flex flex-1 flex-col justify-center gap-1 px-6 !py-0'>
-          <CardTitle>Sales by Month</CardTitle>
-          <CardDescription>
-            <span className='hidden @[540px]/card:block'>
-              Total sales (cost of land bought by clients) per month
-            </span>
-            <span className='@[540px]/card:hidden'>Sales per month</span>
-          </CardDescription>
-        </div>
+    <Card className='h-full w-full border shadow-md'>
+      <CardHeader>
+        <CardTitle>Sales by Month</CardTitle>
+        <CardDescription>
+          Total sales (cost of land bought by clients) per month
+        </CardDescription>
       </CardHeader>
-      <CardContent className='px-2 pt-4 sm:px-6 sm:pt-6'>
+      <CardContent className='flex h-[250px] items-center justify-center'>
         {loading ? (
           <div>Loading sales data...</div>
         ) : error ? (
@@ -105,7 +100,10 @@ export function BarGraph() {
         ) : chartData.length === 0 ? (
           <div>No sales data available.</div>
         ) : (
-          <ChartContainer config={{}} className='aspect-auto h-[250px] w-full'>
+          <ChartContainer
+            config={{}}
+            className='mx-auto h-[250px] w-full max-w-[400px]'
+          >
             <BarChart data={chartData} margin={{ left: 12, right: 12 }}>
               <CartesianGrid vertical={false} />
               <XAxis

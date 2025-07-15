@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Building2, Plus, RefreshCw, X } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
+import QRCode from 'qrcode';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -60,6 +61,7 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
   const { theme } = useTheme();
   const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
   const [amenities, setAmenities] = useState(['']);
+  const [plotQrCode, setPlotQrCode] = useState<string | null>(null);
 
   const form = useForm<PlotFormValues>({
     resolver: zodResolver(formSchema),
@@ -142,10 +144,8 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
         (amenity) => amenity.trim() !== ''
       );
 
-      // Generate QR code with plot name and location
-      const QRCode = (await import('qrcode')).default;
-      const qrString = `${values.title} - ${values.location}`;
-      const qrUrl = await QRCode.toDataURL(qrString);
+      // --- Remove qrData logic ---
+      // const qrData = `plot:${projectId}-${nanoid(8)}`;
 
       const response = await fetch('/api/plots', {
         method: 'POST',
@@ -160,8 +160,7 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
           latitude,
           longitude,
           totalArea,
-          projectId,
-          qrUrl // include generated QR code data URL
+          projectId
         })
       });
 
@@ -174,6 +173,14 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
           throw new Error(errorMessage);
         }
         throw new Error(data.error || 'Failed to create plot');
+      }
+
+      // Generate QR code from plot id (like visit-requests)
+      if (data.id) {
+        const qrCodeUrl = await QRCode.toDataURL(data.id);
+        setPlotQrCode(qrCodeUrl);
+      } else {
+        setPlotQrCode(null);
       }
 
       toast.success('Plot created successfully!');
@@ -571,6 +578,17 @@ const AddPlotForm = ({ projectId, onSuccess }: AddPlotFormProps) => {
                 </>
               )}
             </Button>
+            {/* Show QR code after plot creation */}
+            {plotQrCode && (
+              <div className='mt-6 flex flex-col items-center'>
+                <div className='mb-2 font-semibold'>Plot QR Code</div>
+                <img
+                  src={plotQrCode}
+                  alt='Plot QR Code'
+                  className='h-48 w-48'
+                />
+              </div>
+            )}
           </form>
         </Form>
       </CardContent>

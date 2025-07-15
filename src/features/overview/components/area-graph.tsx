@@ -1,8 +1,8 @@
 'use client';
 
 import { IconTrendingUp } from '@tabler/icons-react';
-import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 import { useEffect, useState } from 'react';
+import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 
 import {
   Card,
@@ -59,17 +59,17 @@ export function AreaGraph() {
   }, []);
 
   return (
-    <Card className='@container/card'>
+    <Card className='@container/card flex h-full flex-col'>
       <CardHeader>
         <CardTitle>Area Chart - Stacked</CardTitle>
         <CardDescription>
           Showing total visitors for the last 6 months
         </CardDescription>
       </CardHeader>
-      <CardContent className='px-2 pt-4 sm:px-6 sm:pt-6'>
+      <CardContent className='flex h-[250px] items-center justify-center'>
         <ChartContainer
           config={chartConfig}
-          className='aspect-auto h-[250px] w-full'
+          className='mx-auto h-[250px] w-full max-w-[500px]'
         >
           <AreaChart
             data={chartData}
